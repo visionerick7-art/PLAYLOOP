@@ -1,0 +1,618 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLAYLOOP | Space Defender 3D</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #030615;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    #game {
+      position: fixed;
+      inset: 0;
+    }
+
+    #hud {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .stat {
+      background: rgba(5, 15, 40, .85);
+      border: 1px solid #16d9ff;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: bold;
+      box-shadow: 0 0 15px #007bff55;
+    }
+
+    #message {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+      background: rgba(0, 0, 15, .78);
+      z-index: 10;
+    }
+
+    #message h1 {
+      color: #19dcff;
+      font-size: clamp(30px, 7vw, 58px);
+      margin-bottom: 8px;
+      text-shadow: 0 0 20px #00aaff;
+    }
+
+    #message p {
+      max-width: 500px;
+      line-height: 1.6;
+      color: #c9d8ff;
+    }
+
+    button {
+      border: 0;
+      border-radius: 9px;
+      background: linear-gradient(120deg, #00c8ff, #635bff);
+      color: white;
+      padding: 13px 25px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 8px;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 18px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 18px;
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .control-group button {
+      pointer-events: auto;
+      width: 58px;
+      height: 55px;
+      padding: 0;
+      background: #10264dcc;
+      border: 1px solid #15cfff;
+      font-size: 22px;
+      touch-action: none;
+    }
+
+    #fire {
+      width: 80px;
+      background: #a51d52dd;
+      border-color: #ff4b9a;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+
+<body>
+  <div id="game"></div>
+
+  <div id="hud">
+    <div class="stat">SCORE: <span id="score">0</span></div>
+    <div class="stat">HEALTH: <span id="health">100</span>%</div>
+    <div class="stat">WAVE: <span id="wave">1</span></div>
+  </div>
+
+  <div id="message">
+    <h1>SPACE DEFENDER</h1>
+    <p>
+      Defend the galaxy! Destroy enemy spacecraft, avoid collisions
+      and survive increasingly difficult waves.
+    </p>
+    <p>
+      Move: Arrow keys or WASD<br>
+      Shoot: SPACEBAR
+    </p>
+    <button id="start">START MISSION</button>
+  </div>
+
+  <div id="controls">
+    <div class="control-group">
+      <button data-key="ArrowLeft">◀</button>
+      <button data-key="ArrowRight">▶</button>
+    </div>
+    <div class="control-group">
+      <button data-key="ArrowUp">▲</button>
+      <button data-key="ArrowDown">▼</button>
+      <button id="fire">FIRE</button>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from "three";
+
+    const container = document.getElementById("game");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x030615);
+    scene.fog = new THREE.Fog(0x030615, 15, 45);
+
+    const camera = new THREE.PerspectiveCamera(
+      65,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      100
+    );
+
+    camera.position.set(0, 0, 16);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true
+    });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+
+    const blueLight = new THREE.PointLight(0x168cff, 30, 30);
+    blueLight.position.set(0, 4, 7);
+    scene.add(blueLight);
+
+    const stars = new THREE.BufferGeometry();
+    const starPositions = [];
+
+    for (let i = 0; i < 900; i++) {
+      starPositions.push(
+        (Math.random() - 0.5) * 35,
+        (Math.random() - 0.5) * 25,
+        -Math.random() * 35
+      );
+    }
+
+    stars.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(starPositions, 3)
+    );
+
+    const starField = new THREE.Points(
+      stars,
+      new THREE.PointsMaterial({
+        color: 0x9bdfff,
+        size: 0.055
+      })
+    );
+
+    scene.add(starField);
+
+    // Player spaceship
+    const player = new THREE.Group();
+
+    const shipBody = new THREE.Mesh(
+      new THREE.ConeGeometry(0.65, 1.8, 4),
+      new THREE.MeshStandardMaterial({
+        color: 0x13cfff,
+        metalness: 0.7,
+        roughness: 0.25,
+        emissive: 0x003b88
+      })
+    );
+
+    shipBody.rotation.z = 0;
+    shipBody.rotation.x = Math.PI;
+    player.add(shipBody);
+
+    const wingMaterial = new THREE.MeshStandardMaterial({
+      color: 0x6d59ff,
+      metalness: 0.6,
+      emissive: 0x160c66
+    });
+
+    const leftWing = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 0.16, 0.35),
+      wingMaterial
+    );
+
+    leftWing.position.set(-0.65, -0.45, 0);
+    leftWing.rotation.z = -0.3;
+    player.add(leftWing);
+
+    const rightWing = leftWing.clone();
+    rightWing.position.x = 0.65;
+    rightWing.rotation.z = 0.3;
+    player.add(rightWing);
+
+    const engine = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.3, 0.5, 12),
+      new THREE.MeshBasicMaterial({ color: 0xff8a00 })
+    );
+
+    engine.position.y = -0.9;
+    player.add(engine);
+
+    player.position.set(0, -5, 0);
+    scene.add(player);
+
+    const bullets = [];
+    const enemies = [];
+    const explosions = [];
+
+    const keys = {};
+
+    let score = 0;
+    let health = 100;
+    let wave = 1;
+    let running = false;
+    let gameOver = false;
+    let lastShot = 0;
+    let spawnTimer = 0;
+    let enemySpeed = 1.7;
+    let lastTime = 0;
+
+    const scoreDisplay = document.getElementById("score");
+    const healthDisplay = document.getElementById("health");
+    const waveDisplay = document.getElementById("wave");
+    const message = document.getElementById("message");
+
+    function createEnemy() {
+      const enemy = new THREE.Group();
+
+      const body = new THREE.Mesh(
+        new THREE.SphereGeometry(0.55, 12, 10),
+        new THREE.MeshStandardMaterial({
+          color: 0xff245c,
+          metalness: 0.5,
+          emissive: 0x650020
+        })
+      );
+
+      enemy.add(body);
+
+      const wing = new THREE.Mesh(
+        new THREE.BoxGeometry(1.6, 0.15, 0.3),
+        new THREE.MeshStandardMaterial({
+          color: 0xff8c00,
+          emissive: 0x552000
+        })
+      );
+
+      enemy.add(wing);
+
+      enemy.position.set(
+        (Math.random() - 0.5) * 12,
+        8,
+        -Math.random() * 3
+      );
+
+      enemy.userData.speed = enemySpeed + Math.random() * 0.8;
+      scene.add(enemy);
+      enemies.push(enemy);
+    }
+
+    function shoot() {
+      const now = performance.now();
+
+      if (now - lastShot < 230) return;
+      lastShot = now;
+
+      const bullet = new THREE.Mesh(
+        new THREE.SphereGeometry(0.13, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0x00f5ff })
+      );
+
+      bullet.position.copy(player.position);
+      bullet.position.y += 0.9;
+
+      scene.add(bullet);
+      bullets.push(bullet);
+    }
+
+    function makeExplosion(position) {
+      const particle = new THREE.Mesh(
+        new THREE.SphereGeometry(0.35, 8, 8),
+        new THREE.MeshBasicMaterial({
+          color: 0xffa500,
+          transparent: true
+        })
+      );
+
+      particle.position.copy(position);
+      scene.add(particle);
+
+      explosions.push({
+        mesh: particle,
+        life: 0.35
+      });
+    }
+
+    function updateHUD() {
+      scoreDisplay.textContent = score;
+      healthDisplay.textContent = health;
+      waveDisplay.textContent = wave;
+    }
+
+    function endGame() {
+      running = false;
+      gameOver = true;
+
+      message.classList.remove("hidden");
+
+      message.innerHTML = `
+        <h1>MISSION FAILED</h1>
+        <p>Your final score: <strong>${score}</strong></p>
+        <p>You reached wave ${wave}. The galaxy needs another defender!</p>
+        <button id="restart">RESTART MISSION</button>
+      `;
+
+      document.getElementById("restart").addEventListener(
+        "click",
+        startGame
+      );
+    }
+
+    function startGame() {
+      bullets.forEach(item => scene.remove(item));
+      enemies.forEach(item => scene.remove(item));
+      explosions.forEach(item => scene.remove(item.mesh));
+
+      bullets.length = 0;
+      enemies.length = 0;
+      explosions.length = 0;
+
+      score = 0;
+      health = 100;
+      wave = 1;
+      enemySpeed = 1.7;
+      spawnTimer = 0;
+      lastShot = 0;
+      player.position.set(0, -5, 0);
+
+      updateHUD();
+
+      gameOver = false;
+      running = true;
+      lastTime = performance.now();
+
+      message.classList.add("hidden");
+    }
+
+    function update(delta) {
+      if (!running) return;
+
+      // Player movement
+      const speed = 7 * delta;
+
+      if (keys.ArrowLeft || keys.a || keys.A) {
+        player.position.x -= speed;
+      }
+
+      if (keys.ArrowRight || keys.d || keys.D) {
+        player.position.x += speed;
+      }
+
+      if (keys.ArrowUp || keys.w || keys.W) {
+        player.position.y += speed;
+      }
+
+      if (keys.ArrowDown || keys.s || keys.S) {
+        player.position.y -= speed;
+      }
+
+      player.position.x = THREE.MathUtils.clamp(
+        player.position.x, -7, 7
+      );
+
+      player.position.y = THREE.MathUtils.clamp(
+        player.position.y, -6, 5
+      );
+
+      if (keys[" "] || keys.fire) shoot();
+
+      // Shooting
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const bullet = bullets[i];
+        bullet.position.y += 13 * delta;
+
+        if (bullet.position.y > 10) {
+          scene.remove(bullet);
+          bullets.splice(i, 1);
+        }
+      }
+
+      // Enemy spawning
+      spawnTimer += delta;
+
+      const spawnInterval = Math.max(0.35, 1.25 - wave * 0.07);
+
+      if (spawnTimer > spawnInterval) {
+        spawnTimer = 0;
+        createEnemy();
+      }
+
+      // Enemy movement and collisions
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+
+        enemy.position.y -= enemy.userData.speed * delta;
+        enemy.rotation.z += delta * 0.8;
+
+        if (enemy.position.y < -8) {
+          scene.remove(enemy);
+          enemies.splice(i, 1);
+          health -= 10;
+          updateHUD();
+        }
+
+        if (enemy.position.distanceTo(player.position) < 1.1) {
+          makeExplosion(enemy.position);
+          scene.remove(enemy);
+          enemies.splice(i, 1);
+          health -= 20;
+          updateHUD();
+        }
+
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          if (
+            enemy.position.distanceTo(bullets[j].position) < 0.8
+          ) {
+            makeExplosion(enemy.position);
+
+            scene.remove(enemy);
+            enemies.splice(i, 1);
+
+            scene.remove(bullets[j]);
+            bullets.splice(j, 1);
+
+            score += 100;
+            updateHUD();
+            break;
+          }
+        }
+      }
+
+      // Explosions
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        const explosion = explosions[i];
+        explosion.life -= delta;
+        explosion.mesh.scale.multiplyScalar(1 + delta * 2);
+
+        if (explosion.life <= 0) {
+          scene.remove(explosion.mesh);
+          explosions.splice(i, 1);
+        }
+      }
+
+      // Increase difficulty
+      const newWave = Math.floor(score / 1000) + 1;
+
+      if (newWave > wave) {
+        wave = newWave;
+        enemySpeed += 0.35;
+        updateHUD();
+      }
+
+      // Moving stars
+      const positions = stars.attributes.position.array;
+
+      for (let i = 1; i < positions.length; i += 3) {
+        positions[i] -= delta * 2.5;
+
+        if (positions[i] < -13) {
+          positions[i] = 13;
+        }
+      }
+
+      stars.attributes.position.needsUpdate = true;
+
+      if (health <= 0) {
+        health = 0;
+        updateHUD();
+        endGame();
+      }
+    }
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      const delta = Math.min((time - lastTime) / 1000, 0.05);
+      lastTime = time;
+
+      update(delta);
+
+      renderer.render(scene, camera);
+    }
+
+    requestAnimationFrame(animate);
+
+    // Keyboard controls
+    window.addEventListener("keydown", event => {
+      keys[event.key] = true;
+
+      if (
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "]
+          .includes(event.key)
+      ) {
+        event.preventDefault();
+      }
+    });
+
+    window.addEventListener("keyup", event => {
+      keys[event.key] = false;
+    });
+
+    // Mobile movement controls
+    document.querySelectorAll("[data-key]").forEach(button => {
+      const key = button.dataset.key;
+
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        keys[key] = true;
+      });
+
+      ["pointerup", "pointerleave", "pointercancel"].forEach(name => {
+        button.addEventListener(name, () => {
+          keys[key] = false;
+        });
+      });
+    });
+
+    document.getElementById("fire").addEventListener(
+      "pointerdown", event => {
+        event.preventDefault();
+        keys.fire = true;
+      }
+    );
+
+    ["pointerup", "pointerleave", "pointercancel"].forEach(name => {
+      document.getElementById("fire").addEventListener(name, () => {
+        keys.fire = false;
+      });
+    });
+
+    document.getElementById("start").addEventListener(
+      "click", startGame
+    );
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
