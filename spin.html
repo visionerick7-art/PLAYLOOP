@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLAYLOOP | Spin Arena</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:radial-gradient(circle at top,#29205b,#080b1b 65%);
+ color:white;font-family:Arial,sans-serif;text-align:center;
+ min-height:100vh;padding:20px;
+}
+header{max-width:800px;margin:15px auto 25px}
+h1{color:#ffd65a;font-size:36px;margin-bottom:8px}
+header p{color:#c9c6e7}
+.stats{
+ display:flex;justify-content:center;gap:12px;flex-wrap:wrap;
+ margin:20px auto;
+}
+.stat{
+ background:#171b38;border:1px solid #7060ce;
+ border-radius:12px;padding:12px 20px;
+}
+.stat strong{display:block;color:#ffd65a;font-size:22px;margin-top:5px}
+.wheel-wrap{
+ position:relative;width:min(390px,85vw);
+ margin:25px auto;
+}
+canvas{
+ width:100%;height:auto;border-radius:50%;
+ filter:drop-shadow(0 0 22px #8d4cff);
+}
+.pointer{
+ position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+ width:0;height:0;border-left:18px solid transparent;
+ border-right:18px solid transparent;border-top:38px solid white;
+ z-index:2;
+}
+button{
+ border:0;border-radius:10px;padding:14px 23px;
+ font-size:16px;font-weight:bold;cursor:pointer;margin:6px;
+}
+#spinBtn{background:#ffd34e;color:#241600}
+#resetBtn{background:#343b65;color:white}
+button:disabled{opacity:.5;cursor:not-allowed}
+.result{
+ max-width:500px;margin:18px auto;padding:17px;
+ border:1px solid #8063e8;border-radius:13px;
+ background:#171b38;min-height:60px;
+}
+.history{
+ max-width:500px;margin:20px auto;text-align:left;
+ background:#121831;border-radius:12px;padding:15px;
+}
+.history h3{text-align:center;color:#ffd65a}
+.history ul{padding-left:22px;line-height:1.8}
+.note{font-size:12px;color:#aaa;margin:25px auto;max-width:600px}
+a{color:#78e7ff}
+</style>
+</head>
+<body>
+
+<header>
+ <h1>🎰 SPIN ARENA</h1>
+ <p>Spin the wheel. Test your luck. Enjoy the game!</p>
+</header>
+
+<div class="stats">
+ <div class="stat">VIRTUAL CREDITS<strong id="credits">1,000</strong></div>
+ <div class="stat">SPIN COST<strong>50</strong></div>
+ <div class="stat">TOTAL SPINS<strong id="total">0</strong></div>
+</div>
+
+<div class="wheel-wrap">
+ <div class="pointer"></div>
+ <canvas id="wheel" width="600" height="600"></canvas>
+</div>
+
+<button id="spinBtn">🎯 SPIN NOW — 50 CREDITS</button>
+<button id="resetBtn">RESET GAME</button>
+
+<div class="result" id="result">
+ Welcome to Spin Arena! Press SPIN NOW to play.
+</div>
+
+<div class="history">
+ <h3>🏆 SPIN HISTORY</h3>
+ <ul id="history">
+  <li>No spins yet. Your first spin awaits!</li>
+ </ul>
+</div>
+
+<p class="note">
+ DEMO GAME ONLY. Credits are fictional, have no monetary value,
+ and cannot be bought, deposited, transferred, or withdrawn.
+ No real-money gambling or cash prizes are offered.
+</p>
+
+<script>
+const canvas=document.getElementById("wheel");
+const ctx=canvas.getContext("2d");
+
+const sectors=[
+ {label:"50",value:50,color:"#ef476f"},
+ {label:"100",value:100,color:"#ffd166"},
+ {label:"LOSE",value:-50,color:"#073b4c"},
+ {label:"200",value:200,color:"#06d6a0"},
+ {label:"25",value:25,color:"#8338ec"},
+ {label:"LOSE",value:-50,color:"#3a506b"},
+ {label:"500",value:500,color:"#ff9f1c"},
+ {label:"150",value:150,color:"#118ab2"}
+];
+
+const center=300;
+const radius=275;
+const slice=Math.PI*2/sectors.length;
+
+let angle=0;
+let credits=1000;
+let spins=0;
+let spinning=false;
+
+const creditsEl=document.getElementById("credits");
+const totalEl=document.getElementById("total");
+const resultEl=document.getElementById("result");
+const spinBtn=document.getElementById("spinBtn");
+const historyEl=document.getElementById("history");
+
+function drawWheel(){
+ ctx.clearRect(0,0,600,600);
+
+ sectors.forEach((sector,i)=>{
+  const start=angle+i*slice;
+  const end=start+slice;
+
+  ctx.beginPath();
+  ctx.moveTo(center,center);
+  ctx.arc(center,center,radius,start,end);
+  ctx.closePath();
+  ctx.fillStyle=sector.color;
+  ctx.fill();
+
+  ctx.strokeStyle="white";
+  ctx.lineWidth=4;
+  ctx.stroke();
+
+  ctx.save();
+  ctx.translate(center,center);
+  ctx.rotate(start+slice/2);
+  ctx.textAlign="right";
+  ctx.fillStyle="white";
+  ctx.font="bold 31px Arial";
+  ctx.fillText(sector.label,235,12);
+  ctx.restore();
+ });
+
+ ctx.beginPath();
+ ctx.arc(center,center,65,0,Math.PI*2);
+ ctx.fillStyle="#ffffff";
+ ctx.fill();
+
+ ctx.fillStyle="#17133b";
+ ctx.font="bold 27px Arial";
+ ctx.textAlign="center";
+ ctx.fillText("PLAY",center,center+9);
+}
+
+function updateStats(){
+ creditsEl.textContent=credits.toLocaleString();
+ totalEl.textContent=spins;
+}
+
+function addHistory(message){
+ const item=document.createElement("li");
+ item.textContent=message;
+
+ if(historyEl.children.length===1 &&
+ historyEl.children[0].textContent.includes("No spins")){
+  historyEl.innerHTML="";
+ }
+
+ historyEl.prepend(item);
+
+ while(historyEl.children.length>8){
+  historyEl.lastElementChild.remove();
+ }
+}
+
+function spin(){
+ if(spinning)return;
+
+ if(credits<50){
+  resultEl.textContent="Not enough virtual credits! Reset the demo to play again.";
+  return;
+ }
+
+ spinning=true;
+ spinBtn.disabled=true;
+ credits-=50;
+ updateStats();
+
+ const winningIndex=Math.floor(Math.random()*sectors.length);
+ const extraTurns=6+Math.random()*4;
+
+ const targetAngle=
+  angle+extraTurns*Math.PI*2+
+  (Math.PI*2-(winningIndex*slice+slice/2))+
+  angle% (Math.PI*2);
+
+ const startAngle=angle;
+ const startTime=performance.now();
+ const duration=4200;
+
+ function animate(now){
+  const progress=Math.min((now-startTime)/duration,1);
+  const eased=1-Math.pow(1-progress,4);
+
+  angle=startAngle+(targetAngle-startAngle)*eased;
+  drawWheel();
+
+  if(progress<1){
+   requestAnimationFrame(animate);
+  }else{
+   angle=angle%(Math.PI*2);
+
+   const prize=sectors[winningIndex];
+   credits+=prize.value;
+   spins++;
+
+   const message=prize.value>0
+    ? "You won "+prize.value+" virtual credits!"
+    : "No reward this time. Better luck next spin!";
+
+   resultEl.textContent=message;
+   addHistory(message);
+   updateStats();
+
+   spinning=false;
+   spinBtn.disabled=false;
+  }
+ }
+
+ requestAnimationFrame(animate);
+}
+
+spinBtn.addEventListener("click",spin);
+
+document.getElementById("resetBtn").addEventListener("click",()=>{
+ if(spinning)return;
+
+ credits=1000;
+ spins=0;
+ angle=0;
+
+ historyEl.innerHTML="<li>No spins yet. Your first spin awaits!</li>";
+ resultEl.textContent="Demo reset! You have 1,000 virtual credits.";
+ updateStats();
+ drawWheel();
+});
+
+drawWheel();
+updateStats();
+</script>
+
+</body>
+</html>
