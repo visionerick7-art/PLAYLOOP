@@ -728,6 +728,37 @@ footer p {
   background: linear-gradient(90deg, #42d982, #a4ff75);
   color: #092015;
   font-weight: bold;
+
+/* ANIMAL MADNESS GAME CARD */
+.game-card.animal {
+  border: 1px solid rgba(255, 190, 90, 0.75);
+  background: linear-gradient(145deg, #42301d, #172b35);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card.animal:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 14px 35px rgba(255, 190, 90, 0.25);
+}
+
+.game-card.animal .game-icon {
+  font-size: 46px;
+  filter: drop-shadow(0 0 10px rgba(255, 190, 90, 0.6));
+}
+
+.game-card.animal .game-type {
+  color: #ffd17d;
+}
+
+.game-card.animal .game-button {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  background: linear-gradient(90deg, #ffbd59, #ffeb91);
+  color: #30200b;
+  font-weight: bold;
+}
 }
 }
 }
