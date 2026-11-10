@@ -561,7 +561,54 @@ function animate(){
    a.rotation.z=0;
   }
  });
- camera.position.x=Math.sin(cameraAngle)*18;
+ 
+// CHASING MODE
+if (chaseMode && chasePair.length === 2) {
+  const chaser = chasePair[0];
+  const target = chasePair[1];
+
+  if (chaseTimer > 0) {
+    chaseTimer -= 0.016;
+
+    const direction = new THREE.Vector3()
+      .subVectors(target.position, chaser.position);
+
+    direction.y = 0;
+
+    if (direction.length() > 1.5) {
+      direction.normalize();
+      chaser.position.addScaledVector(direction, 0.055);
+    }
+
+    target.rotation.y += 0.035;
+    chaser.rotation.y += 0.06;
+    chaser.position.y = Math.abs(Math.sin(time * 8)) * 0.3;
+  } else {
+    chaseMode = false;
+    chasePair = [];
+    say("😂 The chase is over! What a funny race!");
+  }
+}
+
+// DANCE BATTLE
+if (battleMode && battlePair.length === 2) {
+  if (battleTimer > 0) {
+    battleTimer -= 0.016;
+
+    battlePair.forEach((animal, index) => {
+      animal.rotation.y += index === 0 ? 0.12 : -0.12;
+      animal.position.y =
+        Math.abs(Math.sin(time * 10 + index * Math.PI)) * 0.55;
+      animal.rotation.z =
+        Math.sin(time * 8 + index * Math.PI) * 0.3;
+    });
+  } else {
+    battleMode = false;
+    battlePair = [];
+    say("🏆 Amazing dance battle! The animals are champions!");
+  }
+}
+camera.position.x=Math.sin(cameraAngle)*18;
  camera.position.z=Math.cos(cameraAngle)*18;
  camera.lookAt(0,1,0);
  renderer.render(scene,camera);
