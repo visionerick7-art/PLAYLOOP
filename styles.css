@@ -502,3 +502,141 @@ footer p {
     font-size: 45px;
   }
 }
+
+/* =================================
+   PLAYLOOP GAME MODAL
+================================= */
+
+.game-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.game-window {
+  width: 100%;
+  max-width: 540px;
+  padding: 35px;
+  position: relative;
+  border: 1px solid #46517a;
+  border-radius: 20px;
+  background: #121a2d;
+  box-shadow: 0 0 50px #8b5cf633;
+}
+
+.game-window h2 {
+  margin-bottom: 20px;
+}
+
+.close-game {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  background: #26334c;
+  border: 0;
+  color: white;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+}
+
+.game-progress {
+  color: #22d3ee;
+  font-size: 12px;
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+}
+
+.answer-list {
+  display: grid;
+  gap: 12px;
+  margin: 25px 0;
+}
+
+.answer-option {
+  background: #1c2941;
+  color: white;
+  border: 1px solid #394968;
+  padding: 14px;
+  border-radius: 9px;
+  text-align: left;
+}
+
+.answer-option:hover:not(:disabled) {
+  border-color: #22d3ee;
+  background: #263653;
+}
+
+.answer-option:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.correct-feedback {
+  color: #a3e635;
+  margin: 15px 0;
+}
+
+.wrong-feedback {
+  color: #fb7185;
+  margin: 15px 0;
+}
+
+.next-question {
+  margin-top: 15px;
+  border: 0;
+  color: white;
+}
+
+.game-results {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.game-results h2 {
+  color: #a3e635;
+  margin: 20px 0;
+}
+
+.result-icon {
+  font-size: 65px;
+}
+
+.puzzle-word {
+  text-align: center;
+  font-size: 35px;
+  color: #22d3ee;
+  font-weight: bold;
+  margin: 25px 0;
+}
+
+.game-window input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #46517a;
+  background: #090d19;
+  color: white;
+  margin: 15px 0;
+}
+
+.game-window #checkPuzzle {
+  border: 0;
+}
+
+.game-window #speedStart {
+  border: 0;
+  margin: 15px 0;
+}
+
+@media (max-width: 560px) {
+  .game-window {
+    padding: 25px 18px;
+  }
+}
