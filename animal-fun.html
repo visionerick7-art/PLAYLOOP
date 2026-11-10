@@ -1,0 +1,487 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLAYLOOP | Animal Madness</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#101522;
+  color:white;
+  font-family:Arial,sans-serif;
+}
+header{
+  padding:18px;
+  text-align:center;
+  background:linear-gradient(120deg,#102e3d,#35204b);
+}
+header h1{margin:5px;color:#8dffb1}
+header p{color:#ddd}
+#game{
+  width:100%;
+  height:65vh;
+  min-height:380px;
+  display:block;
+  touch-action:none;
+}
+.panel{
+  max-width:1000px;
+  margin:auto;
+  padding:15px;
+}
+.stats{
+  display:flex;
+  justify-content:space-around;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.stat{
+  background:#202b3c;
+  border-radius:10px;
+  padding:12px;
+  min-width:100px;
+  text-align:center;
+}
+.controls{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:15px 0;
+}
+button{
+  border:0;
+  border-radius:9px;
+  padding:12px 16px;
+  background:#39d98a;
+  color:#10251c;
+  font-weight:bold;
+  cursor:pointer;
+}
+button:hover{filter:brightness(1.15)}
+button:disabled{opacity:.5}
+#message{
+  text-align:center;
+  padding:12px;
+  background:#202b3c;
+  border-radius:10px;
+  min-height:45px;
+}
+.hint{text-align:center;color:#bdc8d8;font-size:13px}
+a{color:#8dffb1}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🐾 ANIMAL MADNESS</h1>
+  <p>Funny animals. Wild encounters. Endless surprises!</p>
+</header>
+
+<div class="panel">
+  <div class="stats">
+    <div class="stat">⭐ Score<br><strong id="score">0</strong></div>
+    <div class="stat">🐾 Animals<br><strong id="count">6</strong></div>
+    <div class="stat">🌍 World<br><strong id="world">Funny Home</strong></div>
+  </div>
+</div>
+
+<div id="game"></div>
+
+<div class="panel">
+  <h2>Choose an animal world</h2>
+  <div class="controls">
+    <button onclick="changeWorld('home')">🏡 Home Animals</button>
+    <button onclick="changeWorld('farm')">🐄 Farm</button>
+    <button onclick="changeWorld('birds')">🦜 Birds</button>
+    <button onclick="changeWorld('wild')">🦁 Wild Kingdom</button>
+  </div>
+
+  <h2>Animal interactions</h2>
+  <div class="controls">
+    <button onclick="triggerAction()">😂 Make Them Interact</button>
+    <button onclick="addAnimal()">➕ Add Animal</button>
+    <button onclick="performDance()">💃 Animal Dance</button>
+    <button onclick="resetGame()">🔄 Reset</button>
+  </div>
+
+  <div id="message">
+    Welcome! Click an animal to make it perform a funny action.
+  </div>
+  <p class="hint">
+    Desktop: click animals to interact. Drag to rotate the camera.
+    Mobile: tap animals and use the buttons.
+  </p>
+  <p style="text-align:center">
+    <a href="index.html">← Back to PLAYLOOP</a>
+  </p>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+
+const container=document.getElementById("game");
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x91c9df);
+scene.fog=new THREE.Fog(0x91c9df,25,65);
+
+const camera=new THREE.PerspectiveCamera(
+  60,container.clientWidth/container.clientHeight,0.1,100
+);
+camera.position.set(0,8,17);
+camera.lookAt(0,1,0);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(container.clientWidth,container.clientHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x53634b,2));
+
+const sun=new THREE.DirectionalLight(0xffffff,2.5);
+sun.position.set(-8,14,10);
+sun.castShadow=true;
+scene.add(sun);
+
+const ground=new THREE.Mesh(
+  new THREE.PlaneGeometry(100,100),
+  new THREE.MeshStandardMaterial({color:0x62a85e})
+);
+ground.rotation.x=-Math.PI/2;
+ground.receiveShadow=true;
+scene.add(ground);
+
+const floor=new THREE.GridHelper(100,40,0x477e42,0x477e42);
+floor.position.y=.015;
+scene.add(floor);
+
+const animalGroup=new THREE.Group();
+scene.add(animalGroup);
+
+const animals=[];
+let score=0;
+let currentWorld="home";
+let selected=null;
+let dance=false;
+let cameraAngle=0;
+
+const animalTypes={
+ home:[
+  {name:"Funny Cat",emoji:"🐱",color:0xf0a64d,kind:"cat"},
+  {name:"Happy Dog",emoji:"🐶",color:0xb97b45,kind:"dog"},
+  {name:"Little Rabbit",emoji:"🐰",color:0xe8d7cc,kind:"rabbit"},
+  {name:"Hamster",emoji:"🐹",color:0xc58b57,kind:"hamster"},
+  {name:"Pet Cat",emoji:"😺",color:0xe9bd69,kind:"cat"},
+  {name:"Puppy",emoji:"🐕",color:0x9c704a,kind:"dog"}
+ ],
+ farm:[
+  {name:"Goat",emoji:"🐐",color:0xd6c8a6,kind:"goat"},
+  {name:"Cow",emoji:"🐄",color:0xeee8dc,kind:"cow"},
+  {name:"Sheep",emoji:"🐑",color:0xe7e1d7,kind:"sheep"},
+  {name:"Pig",emoji:"🐷",color:0xf0a3aa,kind:"pig"},
+  {name:"Duck",emoji:"🦆",color:0xe8c94d,kind:"bird"},
+  {name:"Chicken",emoji:"🐔",color:0xf2e3c1,kind:"bird"}
+ ],
+ birds:[
+  {name:"Parrot",emoji:"🦜",color:0x19ad60,kind:"bird"},
+  {name:"Owl",emoji:"🦉",color:0xa77748,kind:"bird"},
+  {name:"Peacock",emoji:"🦚",color:0x1686bd,kind:"bird"},
+  {name:"Flamingo",emoji:"🦩",color:0xe77b9b,kind:"bird"},
+  {name:"Eagle",emoji:"🦅",color:0x79512e,kind:"bird"},
+  {name:"Little Bird",emoji:"🐦",color:0x3b9fdf,kind:"bird"}
+ ],
+ wild:[
+  {name:"Lion",emoji:"🦁",color:0xc58b38,kind:"lion"},
+  {name:"Elephant",emoji:"🐘",color:0x888e96,kind:"elephant"},
+  {name:"Monkey",emoji:"🐒",color:0x99623e,kind:"monkey"},
+  {name:"Zebra",emoji:"🦓",color:0xe6e4db,kind:"zebra"},
+  {name:"Giraffe",emoji:"🦒",color:0xd6a348,kind:"giraffe"},
+  {name:"Tiger",emoji:"🐅",color:0xe58b32,kind:"tiger"}
+ ]
+};
+
+function material(color){
+ return new THREE.MeshStandardMaterial({color,roughness:.8});
+}
+
+function makeAnimal(data,x,z){
+ const group=new THREE.Group();
+ const body=new THREE.Mesh(
+  new THREE.SphereGeometry(.85,24,20),
+  material(data.color)
+ );
+ body.scale.set(1.15,.8,.85);
+ body.position.y=1;
+ body.castShadow=true;
+ group.add(body);
+
+ const head=new THREE.Mesh(
+  new THREE.SphereGeometry(.58,24,20),
+  material(data.color)
+ );
+ head.position.set(0,1.75,.55);
+ head.castShadow=true;
+ group.add(head);
+
+ const eyeMaterial=material(0x111111);
+ [-.22,.22].forEach(dx=>{
+  const eye=new THREE.Mesh(
+   new THREE.SphereGeometry(.075,12,12),eyeMaterial
+  );
+  eye.position.set(dx,1.85,1.04);
+  group.add(eye);
+ });
+
+ const legs=[];
+ for(let i=0;i<4;i++){
+  const leg=new THREE.Mesh(
+   new THREE.CylinderGeometry(.12,.15,.55,12),
+   material(data.color)
+  );
+  leg.position.set(i<2?-.48:.48,.45,i%2?-.48:.48);
+  leg.castShadow=true;
+  group.add(leg);
+  legs.push(leg);
+ }
+
+ if(["cat","rabbit","dog","lion","monkey"].includes(data.kind)){
+  const tail=new THREE.Mesh(
+   new THREE.CylinderGeometry(.07,.12,.8,12),
+   material(data.color)
+  );
+  tail.position.set(0,1.15,-.85);
+  tail.rotation.x=-.8;
+  group.add(tail);
+  group.userData.tail=tail;
+ }
+
+ if(["cat","rabbit","dog","lion","monkey"].includes(data.kind)){
+  [-.32,.32].forEach(dx=>{
+   const ear=new THREE.Mesh(
+    new THREE.SphereGeometry(.2,16,12),
+    material(data.color)
+   );
+   ear.scale.set(.7,1.4,.5);
+   ear.position.set(dx,2.25,.5);
+   group.add(ear);
+  });
+ }
+
+ if(data.kind==="elephant"){
+  const trunk=new THREE.Mesh(
+   new THREE.CylinderGeometry(.13,.18,.9,16),
+   material(data.color)
+  );
+  trunk.position.set(0,1.25,1.12);
+  trunk.rotation.x=-.5;
+  group.add(trunk);
+ }
+
+ if(data.kind==="bird"){
+  const wings=[];
+  [-1,1].forEach(side=>{
+   const wing=new THREE.Mesh(
+    new THREE.SphereGeometry(.5,16,12),
+    material(data.color)
+   );
+   wing.scale.set(1.2,.25,.6);
+   wing.position.set(side*.8,1.25,0);
+   group.add(wing);
+   wings.push(wing);
+  });
+  group.userData.wings=wings;
+ }
+
+ group.position.set(x,0,z);
+ group.userData={
+  ...group.userData,
+  data,legs,phase:Math.random()*6,
+  action:0,actionTime:0,
+  baseY:0
+ };
+ animalGroup.add(group);
+ animals.push(group);
+ return group;
+}
+
+function clearAnimals(){
+ while(animalGroup.children.length){
+  animalGroup.remove(animalGroup.children[0]);
+ }
+ animals.length=0;
+ selected=null;
+}
+
+function populateWorld(world){
+ clearAnimals();
+ currentWorld=world;
+ const list=animalTypes[world];
+ list.forEach((data,i)=>{
+  const angle=(i/6)*Math.PI*2;
+  makeAnimal(data,Math.cos(angle)*5,Math.sin(angle)*4);
+ });
+ document.getElementById("world").textContent={
+  home:"Funny Home",farm:"Farm Life",
+  birds:"Bird Paradise",wild:"Wild Kingdom"
+ }[world];
+ document.getElementById("count").textContent=animals.length;
+ document.getElementById("message").textContent=
+ "Welcome to "+document.getElementById("world").textContent+
+ "! Click an animal to discover its personality.";
+}
+
+window.changeWorld=function(world){
+ populateWorld(world);
+};
+
+function say(text){
+ document.getElementById("message").textContent=text;
+}
+
+function animateAnimal(animal,type){
+ animal.userData.action=type;
+ animal.userData.actionTime=3;
+}
+
+window.triggerAction=function(){
+ if(animals.length<2)return;
+ const a=animals[Math.floor(Math.random()*animals.length)];
+ let b=animals[Math.floor(Math.random()*animals.length)];
+ while(a===b)b=animals[Math.floor(Math.random()*animals.length)];
+ animateAnimal(a,Math.floor(Math.random()*4)+1);
+ animateAnimal(b,Math.floor(Math.random()*4)+1);
+ score+=10;
+ document.getElementById("score").textContent=score;
+ say(a.userData.data.emoji+" "+a.userData.data.name+
+ " meets "+b.userData.data.emoji+" "+b.userData.data.name+
+ "! What a funny encounter! +10 points");
+};
+
+window.addAnimal=function(){
+ const list=animalTypes[currentWorld];
+ const data=list[Math.floor(Math.random()*list.length)];
+ const angle=Math.random()*Math.PI*2;
+ makeAnimal(data,Math.cos(angle)*7,Math.sin(angle)*6);
+ document.getElementById("count").textContent=animals.length;
+ say(data.emoji+" A new "+data.name+" has joined the party!");
+};
+
+window.performDance=function(){
+ dance=!dance;
+ animals.forEach(a=>animateAnimal(a,5));
+ say(dance?"🎉 Everybody is dancing!":"The animal party is over!");
+};
+
+window.resetGame=function(){
+ score=0;
+ document.getElementById("score").textContent=0;
+ populateWorld(currentWorld);
+ say("The animal world has been refreshed!");
+};
+
+const raycaster=new THREE.Raycaster();
+const pointer=new THREE.Vector2();
+
+renderer.domElement.addEventListener("pointerdown",event=>{
+ const rect=renderer.domElement.getBoundingClientRect();
+ pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
+ pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
+ raycaster.setFromCamera(pointer,camera);
+ const hits=raycaster.intersectObjects(animalGroup.children,true);
+ if(!hits.length)return;
+ let obj=hits[0].object;
+ while(obj.parent && obj.parent!==animalGroup)obj=obj.parent;
+ if(!obj.userData.data)return;
+ selected=obj;
+ animateAnimal(obj,Math.floor(Math.random()*4)+1);
+ score+=5;
+ document.getElementById("score").textContent=score;
+ say(obj.userData.data.emoji+" "+obj.userData.data.name+
+ " says hello! +5 points");
+});
+
+let dragging=false,lastX=0;
+renderer.domElement.addEventListener("pointerdown",e=>{
+ if(e.target===renderer.domElement){dragging=true;lastX=e.clientX;}
+});
+renderer.domElement.addEventListener("pointermove",e=>{
+ if(!dragging)return;
+ cameraAngle+=(e.clientX-lastX)*.005;
+ lastX=e.clientX;
+});
+window.addEventListener("pointerup",()=>dragging=false);
+
+function animate(){
+ requestAnimationFrame(animate);
+ const time=performance.now()*.001;
+ animals.forEach(a=>{
+  const u=a.userData;
+  u.phase+=.025;
+  a.position.y=u.baseY+Math.sin(time*2+u.phase)*.06;
+  a.rotation.y=Math.sin(time+u.phase)*.12;
+
+  u.legs.forEach((leg,i)=>{
+   leg.rotation.x=Math.sin(time*5+u.phase+i)*.3;
+  });
+
+  if(u.tail)u.tail.rotation.z=Math.sin(time*5+u.phase)*.5;
+
+  if(u.wings){
+   u.wings.forEach((w,i)=>{
+    w.rotation.z=Math.sin(time*10+u.phase)*.5*(i?1:-1);
+   });
+  }
+
+  if(u.actionTime>0){
+   u.actionTime-=.016;
+   if(u.action===1)a.position.y=.5+Math.abs(Math.sin(time*9))*.9;
+   if(u.action===2)a.rotation.z=Math.sin(time*12)*.45;
+   if(u.action===3)a.rotation.y+=.12;
+   if(u.action===4){
+    a.position.x+=Math.sin(time*8+u.phase)*.035;
+    a.position.z+=Math.cos(time*8+u.phase)*.035;
+   }
+   if(u.action===5){
+    a.position.y=.3+Math.abs(Math.sin(time*12+u.phase))*.35;
+    a.rotation.z=Math.sin(time*8+u.phase)*.25;
+   }
+  }else{
+   a.position.y=Math.sin(time*2+u.phase)*.06;
+   a.rotation.z=0;
+  }
+ });
+ camera.position.x=Math.sin(cameraAngle)*18;
+ camera.position.z=Math.cos(cameraAngle)*18;
+ camera.lookAt(0,1,0);
+ renderer.render(scene,camera);
+}
+
+function resize(){
+ const w=container.clientWidth;
+ const h=container.clientHeight;
+ camera.aspect=w/h;
+ camera.updateProjectionMatrix();
+ renderer.setSize(w,h);
+}
+window.addEventListener("resize",resize);
+
+populateWorld("home");
+animate();
+</script>
+</body>
+</html>
