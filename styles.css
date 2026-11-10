@@ -638,5 +638,26 @@ footer p {
 @media (max-width: 560px) {
   .game-window {
     padding: 25px 18px;
+
+/* PLAYLOOP 3D RACING CARD */
+.game-card.racing {
+  border: 1px solid rgba(0, 220, 255, 0.5);
+  background: linear-gradient(145deg, #102b42, #101526);
+}
+
+.game-card.racing:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 12px 30px rgba(0, 220, 255, 0.2);
+}
+
+.game-card.racing .game-icon {
+  font-size: 42px;
+}
+
+.game-card.racing .game-button {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+}
   }
 }
