@@ -698,6 +698,37 @@ footer p {
   display: inline-block;
   text-decoration: none;
   text-align: center;
+
+/* PLAYLOOP ZOMBIE APOCALYPSE CARD */
+.game-card.zombie {
+  border: 1px solid rgba(83, 255, 143, 0.65);
+  background: linear-gradient(145deg, #19372b, #111820);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card.zombie:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 14px 35px rgba(65, 255, 130, 0.25);
+}
+
+.game-card.zombie .game-icon {
+  font-size: 46px;
+  filter: drop-shadow(0 0 10px rgba(83, 255, 143, 0.5));
+}
+
+.game-card.zombie .game-type {
+  color: #7dffad;
+}
+
+.game-card.zombie .game-button {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  background: linear-gradient(90deg, #42d982, #a4ff75);
+  color: #092015;
+  font-weight: bold;
+}
 }
 }
 }
