@@ -104,7 +104,13 @@ a{color:#8dffb1}
 
   <h2>Animal interactions</h2>
   <div class="controls">
-    <button onclick="triggerAction()">😂 Make Them Interact</button>
+  
+<div class="controls">
+  <button onclick="startChase()">🏃 Chasing Mode</button>
+  <button onclick="danceBattle()">💃 Dance Battle</button>
+  <button onclick="animalSound()">🔊 Funny Sounds</button>
+</div>
+  <button onclick="triggerAction()">😂 Make Them Interact</button>
     <button onclick="addAnimal()">➕ Add Animal</button>
     <button onclick="performDance()">💃 Animal Dance</button>
     <button onclick="resetGame()">🔄 Reset</button>
@@ -179,6 +185,96 @@ let currentWorld="home";
 let selected=null;
 let dance=false;
 let cameraAngle=0;
+
+let chaseMode = false;
+let battleMode = false;
+let chaseTimer = 0;
+let battleTimer = 0;
+let chasePair = [];
+let battlePair = [];
+
+function startChase() {
+  if (animals.length < 2) return;
+
+  chasePair = [
+    animals[Math.floor(Math.random() * animals.length)],
+    animals[Math.floor(Math.random() * animals.length)]
+  ];
+
+  while (chasePair[0] === chasePair[1]) {
+    chasePair[1] = animals[Math.floor(Math.random() * animals.length)];
+  }
+
+  chaseMode = true;
+  battleMode = false;
+  chaseTimer = 10;
+
+  say("🏃 " + chasePair[0].userData.data.name +
+      " is chasing " + chasePair[1].userData.data.name +
+      "! Catch them if you can!");
+}
+
+function danceBattle() {
+  if (animals.length < 2) return;
+
+  battlePair = [
+    animals[Math.floor(Math.random() * animals.length)],
+    animals[Math.floor(Math.random() * animals.length)]
+  ];
+
+  while (battlePair[0] === battlePair[1]) {
+    battlePair[1] = animals[Math.floor(Math.random() * animals.length)];
+  }
+
+  chaseMode = false;
+  battleMode = true;
+  battleTimer = 8;
+
+  battlePair.forEach(a => animateAnimal(a, 5));
+
+  score += 20;
+  document.getElementById("score").textContent = score;
+
+  say("💃 DANCE BATTLE! " +
+      battlePair[0].userData.data.name +
+      " versus " +
+      battlePair[1].userData.data.name +
+      "! +20 points");
+}
+
+function animalSound() {
+  const AudioContextClass =
+    window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioContextClass) {
+    say("Your browser does not support sound effects.");
+    return;
+  }
+
+  const audio = new AudioContextClass();
+  const oscillator = audio.createOscillator();
+  const gain = audio.createGain();
+
+  oscillator.type = "triangle";
+  oscillator.frequency.setValueAtTime(650, audio.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(
+    240, audio.currentTime + 0.25
+  );
+
+  gain.gain.setValueAtTime(0.18, audio.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+    0.001, audio.currentTime + 0.35
+  );
+
+  oscillator.connect(gain);
+  gain.connect(audio.destination);
+
+  oscillator.start();
+  oscillator.stop(audio.currentTime + 0.35);
+
+  say("🔊 Funny animal sound! The animal party is getting louder!");
+  setTimeout(() => audio.close(), 500);
+}
 
 const animalTypes={
  home:[
