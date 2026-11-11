@@ -493,60 +493,80 @@ function movePlayer(dt){
   player.position.z=THREE.MathUtils.clamp(player.position.z,-31,31);
 }
 
-// Enemy AI
-function updateEnemies(dt){
-  for(const e of enemies){
-    if(e.hp<=0)continue;
-    const d=distance(player.position,e.group.position);
-    const detection=hidden?4.2:11;
-  
-if (d < detection) {
-  e.alert = Math.min(1, e.alert + dt * 0.65);
 
-  if (e.alert >= 1) {
-    e.state = "chase";
-  } else {
-    e.state = "suspicious";
-  }
+// ENEMY AI — CORRECTED VERSION
+function updateEnemies(dt) {
+  for (const e of enemies) {
+    if (e.hp <= 0) continue;
 
-} else if (e.alert > 0) {
-  e.alert = Math.max(0, e.alert - dt * 0.22);
+    const d = distance(player.position, e.group.position);
+    const detection = hidden ? 4.2 : 11;
 
-  if (e.alert === 0) {
-    e.state = "patrol";
-  } else if (e.state !== "chase") {
-    e.state = "search";
-  }
-}
+    // Detection and alert levels
+    if (d < detection) {
+      e.alert = Math.min(1, e.alert + dt * 0.65);
 
-updateDetectionIndicator(e);
+      if (e.alert >= 1) {
+        e.state = "chase";
+      } else {
+        e.state = "suspicious";
+      }
 
+    } else if (e.alert > 0) {
+      e.alert = Math.max(0, e.alert - dt * 0.22);
+
+      if (e.alert === 0) {
+        e.state = "patrol";
+      } else if (e.state !== "chase") {
+        e.state = "search";
+      }
     }
 
-    if(e.state==="chase"&&d>1.6){
-      const dir=new THREE.Vector3().subVectors(player.position,e.group.position).normalize();
-      e.group.position.addScaledVector(dir,e.speed*dt);
-      e.group.rotation.y=Math.atan2(dir.x,dir.z);
-    }else if(e.state==="patrol"){
-      e.angle+=dt*.55;
-      e.group.position.x=e.homeX+Math.sin(e.angle)*2;
-      e.group.position.z=e.homeZ+Math.cos(e.angle)*2;
-      e.group.rotation.y=e.angle;
+    updateDetectionIndicator(e);
+
+    // Guard movement
+    if (e.state === "chase" && d > 1.6) {
+      const dir = new THREE.Vector3()
+        .subVectors(player.position, e.group.position)
+        .normalize();
+
+      e.group.position.addScaledVector(dir, e.speed * dt);
+      e.group.rotation.y = Math.atan2(dir.x, dir.z);
+
+    } else if (e.state === "patrol" || e.state === "search") {
+      e.angle += dt * 0.55;
+
+      e.group.position.x = e.homeX + Math.sin(e.angle) * 2;
+      e.group.position.z = e.homeZ + Math.cos(e.angle) * 2;
+      e.group.rotation.y = e.angle;
     }
 
-    if(d<1.7){
-      e.attack-=dt;
-      if(e.attack<=0){
-        e.attack=1.15;
-        health-=hidden?3:8;
-        burst(player.position.clone().add(new THREE.Vector3(0,1,0)),0xff3333);
+    // Guard attacks
+    if (d < 1.7) {
+      e.attack -= dt;
+
+      if (e.attack <= 0) {
+        e.attack = 1.15;
+        health -= hidden ? 3 : 8;
+
+        burst(
+          player.position.clone().add(
+            new THREE.Vector3(0, 1, 0)
+          ),
+          0xff3333
+        );
+
         say("YOU HAVE BEEN HIT!");
         updateHUD();
-        if(health<=0)finish(false);
+
+        if (health <= 0) {
+          finish(false);
+        }
       }
     }
   }
 }
+
 
 // Shuriken flight
 function updateProjectiles(dt){
