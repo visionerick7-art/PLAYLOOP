@@ -758,6 +758,48 @@ footer p {
   background: linear-gradient(90deg, #ffbd59, #ffeb91);
   color: #30200b;
   font-weight: bold;
+
+/* PLAYLOOP BLOCKVERSE PUZZLE CARD */
+.game-card.blockverse {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(112, 225, 255, 0.8);
+  background:
+    radial-gradient(circle at top right, rgba(150, 70, 255, 0.3), transparent 55%),
+    linear-gradient(145deg, #172a55, #24143e);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.game-card.blockverse:hover {
+  transform: translateY(-9px) scale(1.02);
+  box-shadow: 0 15px 38px rgba(80, 190, 255, 0.3);
+}
+
+.game-card.blockverse .game-icon {
+  font-size: 48px;
+  filter: drop-shadow(0 0 12px rgba(100, 220, 255, 0.7));
+}
+
+.game-card.blockverse .game-type {
+  color: #75eaff;
+  font-weight: bold;
+}
+
+.game-card.blockverse .game-button {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  background: linear-gradient(90deg, #42d9ff, #a56bff);
+  color: #101326;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 11px 17px;
+  transition: filter 0.2s ease;
+}
+
+.game-card.blockverse .game-button:hover {
+  filter: brightness(1.2);
+}
 }
 }
 }
