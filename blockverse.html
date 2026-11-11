@@ -1,0 +1,440 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PLAYLOOP | BLOCKVERSE</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101326;color:white;
+ font-family:Arial,sans-serif;text-align:center;
+}
+header{
+ padding:20px 10px;
+ background:linear-gradient(120deg,#162b65,#562b79);
+}
+h1{margin:5px;color:#72eaff;font-size:32px}
+header p{color:#ddd}
+.stats{
+ display:flex;justify-content:center;gap:10px;
+ flex-wrap:wrap;padding:14px;
+}
+.stat{
+ background:#222b49;padding:12px 18px;
+ border-radius:12px;min-width:85px;
+}
+.stat strong{display:block;color:#ffe17c;font-size:20px}
+main{max-width:650px;margin:auto;padding:12px}
+#notice{
+ background:#202b48;padding:12px;border-radius:10px;
+ margin:10px 0;min-height:42px;
+}
+.board{
+ display:grid;grid-template-columns:repeat(10,1fr);
+ gap:3px;background:#283252;padding:5px;
+ border-radius:10px;width:min(94vw,470px);
+ aspect-ratio:1;margin:15px auto;
+}
+.cell{
+ background:#151d36;border-radius:4px;
+ aspect-ratio:1;min-width:0;
+ border:1px solid #303c60;
+}
+.cell.filled{
+ background:var(--block);
+ border:1px solid rgba(255,255,255,.65);
+ box-shadow:inset 0 0 9px #ffffff44,0 0 5px var(--block);
+}
+.cell.preview{outline:2px solid white}
+#pieces{
+ display:flex;justify-content:center;gap:12px;
+ flex-wrap:wrap;margin:15px 0;
+}
+.piece{
+ display:grid;grid-template-columns:repeat(4,23px);
+ gap:3px;padding:10px;background:#222b49;
+ border-radius:10px;cursor:pointer;
+ touch-action:manipulation;
+}
+.piece.selected{outline:3px solid #ffe17c}
+.mini{
+ width:23px;height:23px;border-radius:4px;
+}
+.mini.empty{visibility:hidden}
+button{
+ border:0;padding:12px 15px;border-radius:9px;
+ background:#57e5c1;color:#10232c;
+ font-weight:bold;cursor:pointer;margin:4px;
+}
+button:disabled{opacity:.4}
+button:hover{filter:brightness(1.15)}
+.controls{display:flex;justify-content:center;flex-wrap:wrap}
+.character{
+ background:#222b49;border-radius:12px;
+ padding:12px;margin:10px auto;max-width:400px;
+}
+.character span{font-size:38px}
+#over{
+ display:none;position:fixed;inset:0;
+ background:#000c;z-index:10;
+ align-items:center;justify-content:center;padding:20px;
+}
+.dialog{
+ background:#222b49;padding:25px;border-radius:18px;
+ max-width:350px;width:100%;
+}
+small{color:#c4cce1}
+</style>
+</head>
+<body>
+
+<header>
+ <h1>🧩 BLOCKVERSE</h1>
+ <p>Think. Arrange. Match. Conquer!</p>
+</header>
+
+<div class="stats">
+ <div class="stat">⭐ SCORE<strong id="score">0</strong></div>
+ <div class="stat">🏆 LEVEL<strong id="level">1</strong></div>
+ <div class="stat">🪙 COINS<strong id="coins">0</strong></div>
+ <div class="stat">✨ STARS<strong id="stars">0</strong></div>
+</div>
+
+<main>
+ <div id="notice">Choose a block below, then select where it fits on the board!</div>
+ <div class="board" id="board"></div>
+
+ <h3>🎮 Choose Your Blocks</h3>
+ <div id="pieces"></div>
+
+ <div class="controls">
+  <button onclick="useBooster('hammer')">🔨 Hammer (30)</button>
+  <button onclick="useBooster('bomb')">💣 Bomb (50)</button>
+  <button onclick="useBooster('shuffle')">🔄 Shuffle (20)</button>
+ </div>
+
+ <div class="character">
+  <span id="avatar">💧</span>
+  <h3 id="hero">Blu — Water Guardian</h3>
+  <small id="heroMessage">Complete puzzles to earn rewards and unlock heroes!</small>
+ </div>
+
+ <div class="controls">
+  <button onclick="rotatePiece()">↻ Rotate Block</button>
+  <button onclick="newGame()">🔄 Restart</button>
+  <button onclick="showHelp()">❔ How to Play</button>
+ </div>
+
+ <p><a href="index.html" style="color:#72eaff">← Back to PLAYLOOP</a></p>
+ <small>BLOCKVERSE • Puzzle adventure</small>
+</main>
+
+<div id="over">
+ <div class="dialog">
+  <h2 id="overTitle">Game Over</h2>
+  <p id="overText"></p>
+  <button onclick="newGame()">Play Again</button>
+ </div>
+</div>
+
+<script>
+const SIZE=10;
+const boardEl=document.getElementById("board");
+const piecesEl=document.getElementById("pieces");
+
+const colors=[
+ "#21c7ff","#ff6b4a","#a66cff",
+ "#52df8a","#ffd447","#ff69b4",
+ "#f3f4ff","#ff963e"
+];
+
+const shapes=[
+ [[0,0]],
+ [[0,0],[1,0]],
+ [[0,0],[1,0],[2,0]],
+ [[0,0],[0,1],[1,1]],
+ [[0,0],[1,0],[0,1],[1,1]],
+ [[0,0],[1,0],[2,0],[3,0]],
+ [[0,0],[0,1],[0,2],[1,2]],
+ [[0,0],[1,0],[2,0],[1,1]],
+ [[0,0],[0,1],[0,2],[0,3]],
+ [[0,0],[1,0],[2,0],[2,1],[2,2]],
+ [[0,0],[1,0],[1,1],[2,1]],
+ [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]]
+];
+
+let grid=[];
+let pieces=[];
+let selected=-1;
+let score=0,level=1,coins=0,stars=0;
+let rotation=0;
+let gameEnded=false;
+let heroIndex=0;
+let best=0;
+
+const heroes=[
+ ["💧","Blu — Water Guardian"],
+ ["🔥","Flare — Fire Warrior"],
+ ["🌿","Leafy — Nature Keeper"],
+ ["⚡","Spark — Electric Hero"],
+ ["🔮","Mystic — Crystal Master"],
+ ["🌈","Rainbow — Rainbow Legend"]
+];
+
+function save(){
+ try{
+  localStorage.setItem("blockverseSave",JSON.stringify({
+   score,level,coins,stars,heroIndex,best
+  }));
+ }catch(e){}
+}
+
+function load(){
+ try{
+  const d=JSON.parse(localStorage.getItem("blockverseSave")||"{}");
+  score=d.score||0;level=d.level||1;
+  coins=d.coins||0;stars=d.stars||0;
+  heroIndex=d.heroIndex||0;best=d.best||0;
+ }catch(e){}
+}
+
+function updateStats(){
+ document.getElementById("score").textContent=score;
+ document.getElementById("level").textContent=level;
+ document.getElementById("coins").textContent=coins;
+ document.getElementById("stars").textContent=stars;
+ document.getElementById("avatar").textContent=heroes[heroIndex][0];
+ document.getElementById("hero").textContent=heroes[heroIndex][1];
+ save();
+}
+
+function createBoard(){
+ boardEl.innerHTML="";
+ for(let y=0;y<SIZE;y++){
+  for(let x=0;x<SIZE;x++){
+   const cell=document.createElement("div");
+   cell.className="cell";
+   cell.dataset.x=x;cell.dataset.y=y;
+   cell.addEventListener("click",()=>placePiece(x,y));
+   boardEl.appendChild(cell);
+  }
+ }
+ renderBoard();
+}
+
+function renderBoard(){
+ [...boardEl.children].forEach((cell,i)=>{
+  const x=i%SIZE,y=Math.floor(i/SIZE);
+  const val=grid[y][x];
+  cell.className="cell";
+  cell.style.setProperty("--block",val||"transparent");
+  if(val)cell.classList.add("filled");
+ });
+}
+
+function rotateShape(shape){
+ return shape.map(([x,y])=>[-y,x]);
+}
+
+function normalize(shape){
+ const minX=Math.min(...shape.map(p=>p[0]));
+ const minY=Math.min(...shape.map(p=>p[1]));
+ return shape.map(([x,y])=>[x-minX,y-minY]);
+}
+
+function randomPiece(){
+ const shape=shapes[Math.floor(Math.random()*shapes.length)]
+ .map(p=>[...p]);
+ return {shape,color:colors[Math.floor(Math.random()*colors.length)],used:false};
+}
+
+function generatePieces(){
+ pieces=[randomPiece(),randomPiece(),randomPiece()];
+ selected=-1;rotation=0;
+ renderPieces();
+}
+
+function renderPieces(){
+ piecesEl.innerHTML="";
+ pieces.forEach((piece,index)=>{
+  const holder=document.createElement("div");
+  holder.className="piece"+(selected===index?" selected":"");
+  holder.style.opacity=piece.used?".2":"1";
+  holder.onclick=()=>selectPiece(index);
+
+  const shape=normalize(piece.shape);
+  const width=Math.max(...shape.map(p=>p[0]))+1;
+  const height=Math.max(...shape.map(p=>p[1]))+1;
+  holder.style.gridTemplateColumns=`repeat(${Math.max(4,width)},23px)`;
+  holder.style.gridTemplateRows=`repeat(${Math.max(4,height)},23px)`;
+
+  for(let y=0;y<Math.max(4,height);y++){
+   for(let x=0;x<Math.max(4,width);x++){
+    const mini=document.createElement("div");
+    const exists=shape.some(p=>p[0]===x&&p[1]===y);
+    mini.className="mini"+(exists?"":" empty");
+    if(exists)mini.style.background=piece.color;
+    holder.appendChild(mini);
+   }
+  }
+  piecesEl.appendChild(holder);
+ });
+}
+
+function selectPiece(index){
+ if(gameEnded||pieces[index].used)return;
+ selected=index;rotation=0;
+ renderPieces();
+ document.getElementById("notice").textContent=
+ "Selected block! Choose a position on the board.";
+}
+
+function placePiece(x,y){
+ if(gameEnded||selected<0)return;
+ const piece=pieces[selected];
+ const shape=normalize(piece.shape);
+ const cells=shape.map(([dx,dy])=>[x+dx,y+dy]);
+
+ if(cells.some(([cx,cy])=>
+  cx<0||cy<0||cx>=SIZE||cy>=SIZE||grid[cy][cx])){
+  document.getElementById("notice").textContent=
+   "❌ That position is occupied or outside the board. Try again!";
+  return;
+ }
+
+ cells.forEach(([cx,cy])=>grid[cy][cx]=piece.color);
+ piece.used=true;
+ score+=shape.length;
+ coins+=Math.floor(shape.length/2);
+ const cleared=clearLines();
+ score+=cleared*10;
+ coins+=cleared*5;
+ if(cleared){
+  stars+=Math.min(cleared,3);
+  document.getElementById("notice").textContent=
+   "💥 Brilliant! You cleared "+cleared+" lines!";
+ }else{
+  document.getElementById("notice").textContent=
+   "✨ Great move! Keep building your score!";
+ }
+
+ renderBoard();
+ renderPieces();
+ updateStats();
+ checkLevel();
+ if(pieces.every(p=>p.used))generatePieces();
+ checkGameOver();
+}
+
+function clearLines(){
+ let rows=[],cols=[];
+ for(let y=0;y<SIZE;y++)
+  if(grid[y].every(v=>v))rows.push(y);
+ for(let x=0;x<SIZE;x++)
+  if(grid.every(row=>row[x]))cols.push(x);
+
+ rows.forEach(y=>grid[y].fill(null));
+ cols.forEach(x=>grid.forEach(row=>row[x]=null));
+ return rows.length+cols.length;
+}
+
+function checkLevel(){
+ const target=level*250;
+ if(score>=target){
+  level++;
+  stars+=2;coins+=50;
+  document.getElementById("notice").textContent=
+   "🏆 LEVEL UP! Welcome to level "+level+"! +50 coins!";
+  if(level%3===0&&heroIndex<heroes.length-1){
+   heroIndex++;
+   document.getElementById("heroMessage").textContent=
+    "🎉 New hero unlocked!";
+  }
+  updateStats();
+ }
+}
+
+function canPlace(piece){
+ const shape=normalize(piece.shape);
+ for(let y=0;y<SIZE;y++)
+  for(let x=0;x<SIZE;x++)
+   if(shape.every(([dx,dy])=>
+    x+dx<SIZE&&y+dy<SIZE&&!grid[y+dy][x+dx]))return true;
+ return false;
+}
+
+function checkGameOver(){
+ if(pieces.every(p=>p.used)||pieces.some(p=>!p.used&&canPlace(p)))return;
+ gameEnded=true;
+ document.getElementById("overTitle").textContent="🧩 Puzzle Over!";
+ document.getElementById("overText").textContent=
+ "Final score: "+score+". Best score: "+best+". Keep practising!";
+ document.getElementById("over").style.display="flex";
+ best=Math.max(best,score);save();
+}
+
+function rotatePiece(){
+ if(selected<0||pieces[selected].used)return;
+ pieces[selected].shape=normalize(rotateShape(pieces[selected].shape));
+ rotation++;
+ renderPieces();
+}
+
+function useBooster(type){
+ if(gameEnded)return;
+ const cost={hammer:30,bomb:50,shuffle:20}[type];
+ if(coins<cost){
+  document.getElementById("notice").textContent=
+   "Not enough coins! Clear more lines to earn coins.";
+  return;
+ }
+ if(type==="shuffle"){
+  generatePieces();
+  coins-=cost;
+ }else{
+  const occupied=[];
+  grid.forEach((row,y)=>row.forEach((v,x)=>{
+   if(v)occupied.push([x,y]);
+  }));
+  if(!occupied.length){
+   document.getElementById("notice").textContent="The board is empty!";
+   return;
+  }
+  coins-=cost;
+  const count=type==="hammer"?1:5;
+  for(let i=0;i<count&&occupied.length;i++){
+   const index=Math.floor(Math.random()*occupied.length);
+   const [x,y]=occupied.splice(index,1)[0];
+   grid[y][x]=null;
+  }
+  renderBoard();
+ }
+ updateStats();
+ document.getElementById("notice").textContent=
+ "✨ Booster activated!";
+}
+
+function showHelp(){
+ document.getElementById("notice").textContent=
+ "Choose a block, select its position, fill complete rows or columns to clear them. Earn coins and unlock heroes!";
+}
+
+function newGame(){
+ grid=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+ pieces=[];selected=-1;rotation=0;gameEnded=false;
+ score=0;level=1;
+ document.getElementById("over").style.display="none";
+ createBoard();generatePieces();updateStats();
+ document.getElementById("notice").textContent=
+ "Welcome to BLOCKVERSE! Choose a block and start solving!";
+}
+
+load();
+createBoard();
+generatePieces();
+updateStats();
+</script>
+</body>
+</html>
