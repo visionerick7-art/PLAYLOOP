@@ -799,6 +799,48 @@ footer p {
 
 .game-card.blockverse .game-button:hover {
   filter: brightness(1.2);
+
+/* PLAYLOOP SHADOW ASSASSIN GAME CARD */
+.game-card.shadow {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(157, 112, 255, 0.8);
+  background:
+    radial-gradient(circle at top right, rgba(120, 65, 220, 0.3), transparent 55%),
+    linear-gradient(145deg, #211632, #090d18);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.game-card.shadow:hover {
+  transform: translateY(-9px) scale(1.02);
+  box-shadow: 0 15px 38px rgba(145, 85, 255, 0.35);
+}
+
+.game-card.shadow .game-icon {
+  font-size: 48px;
+  filter: drop-shadow(0 0 12px rgba(170, 120, 255, 0.8));
+}
+
+.game-card.shadow .game-type {
+  color: #bd9aff;
+  font-weight: bold;
+}
+
+.game-card.shadow .game-button {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  background: linear-gradient(90deg, #7145d9, #bd83ff);
+  color: white;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 11px 17px;
+  transition: filter 0.2s ease;
+}
+
+.game-card.shadow .game-button:hover {
+  filter: brightness(1.2);
+}
 }
 }
 }
