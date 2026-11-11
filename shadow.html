@@ -4,667 +4,870 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PLAYLOOP | Shadow Assassin</title>
+<title>Shadow Assassin | PLAYLOOP</title>
 
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;background:#080d16;color:white;
-  font-family:Arial,sans-serif;overflow:hidden
-}
-#game{position:fixed;inset:0}
+body{margin:0;overflow:hidden;background:#080c16;color:white;font-family:Arial,sans-serif}
 canvas{display:block}
-#hud{
-  position:fixed;top:12px;left:12px;right:12px;
-  display:flex;justify-content:space-between;gap:10px;
-  flex-wrap:wrap;pointer-events:none;z-index:5
-}
-.panel{
-  background:rgba(5,12,24,.86);
-  border:1px solid #7d65ff;border-radius:12px;
-  padding:10px 14px;box-shadow:0 0 16px #5135aa55
-}
-.stat{font-size:13px;margin:4px 0}
-#healthBar{height:9px;width:150px;background:#44252b;border-radius:9px;overflow:hidden}
-#healthFill{height:100%;width:100%;background:#47ed91;transition:width .2s}
-#mission{
-  position:fixed;top:112px;left:50%;transform:translateX(-50%);
-  background:#10172cdd;border:1px solid #9b79ff;
-  padding:9px 15px;border-radius:10px;z-index:5;
-  font-size:13px;text-align:center;max-width:90%
-}
-#message{
-  position:fixed;top:160px;left:50%;transform:translateX(-50%);
-  color:#ffe58a;font-weight:bold;text-shadow:0 2px 8px black;
-  z-index:5;text-align:center;pointer-events:none
-}
-#controls{
-  position:fixed;bottom:18px;left:0;right:0;
-  display:flex;justify-content:space-between;
-  align-items:end;padding:0 15px;z-index:8
-}
-.pad,.actions{display:grid;gap:7px}
+#hud{position:fixed;top:12px;left:12px;z-index:5;display:flex;gap:8px;flex-wrap:wrap}
+.stat{background:#101a2ddd;border:1px solid #7655bd;padding:9px 13px;border-radius:9px;font-size:13px}
+#mission{position:fixed;top:75px;left:12px;background:#101a2ddd;padding:10px 14px;border-radius:9px;z-index:5;font-size:13px}
+#message{position:fixed;top:125px;left:50%;transform:translateX(-50%);background:#17152bdd;padding:12px 20px;border-radius:10px;z-index:8;opacity:0;transition:opacity .2s;pointer-events:none}
+#overlay{position:fixed;inset:0;background:linear-gradient(135deg,#080c16ee,#24143bee);display:flex;align-items:center;justify-content:center;z-index:20;text-align:center;padding:20px}
+.panel{max-width:550px;background:#101a2bf2;border:1px solid #a77aff;border-radius:20px;padding:30px;box-shadow:0 0 45px #7c43c455}
+.panel h1{font-size:clamp(30px,6vw,55px);color:#d3b4ff;margin:0 0 12px}
+.panel p{line-height:1.7;color:#d3d9e8}
+button{border:0;border-radius:9px;padding:12px 19px;font-weight:bold;cursor:pointer;background:linear-gradient(90deg,#7145d9,#bd83ff);color:white}
+#controls{position:fixed;bottom:18px;left:15px;right:15px;z-index:10;display:flex;justify-content:space-between;align-items:end;pointer-events:none}
+.pad,.actions{display:grid;gap:7px;pointer-events:auto}
 .pad{grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,45px)}
-.actions{grid-template-columns:repeat(2,76px)}
-.control{
-  border:1px solid #a48aff;background:#171d36dd;
-  color:white;border-radius:12px;font-weight:bold;
-  min-height:43px;touch-action:none
-}
-.control:active{background:#7651d9}
-#startScreen,#endScreen{
-  position:fixed;inset:0;background:linear-gradient(135deg,#080d16ee,#16102bee);
-  z-index:20;display:flex;align-items:center;justify-content:center;
-  text-align:center;padding:20px
-}
-.dialog{
-  max-width:480px;background:#111a2b;
-  border:1px solid #8d6bff;border-radius:20px;
-  padding:28px;box-shadow:0 0 45px #633bba55
-}
-.dialog h1{font-size:35px;color:#c6a7ff;margin:0 0 10px}
-.dialog p{line-height:1.6;color:#d5d9e8}
-.mainBtn{
-  border:0;border-radius:12px;padding:14px 25px;
-  background:linear-gradient(90deg,#7651e8,#b24eff);
-  color:white;font-weight:bold;font-size:16px;cursor:pointer
-}
-#endScreen{display:none}
-.small{font-size:12px;color:#aeb9d0}
-@media(max-width:600px){
-  .panel{padding:7px 9px}
-  .stat{font-size:11px}
-  #healthBar{width:100px}
-  #mission{top:100px;font-size:11px}
-  #message{top:145px}
-  .actions{grid-template-columns:repeat(2,65px)}
-  .control{font-size:11px}
-}
+.actions{grid-template-columns:repeat(2,65px)}
+.control{background:#252b43dd;border:1px solid #a77aff;color:white;padding:10px 5px;border-radius:10px;touch-action:none;font-size:12px}
+.pad .up{grid-column:2}
+.pad .left{grid-column:1;grid-row:2}
+.pad .down{grid-column:2;grid-row:2}
+.pad .right{grid-column:3;grid-row:2}
+#controls{display:none}
+@media(max-width:800px),(pointer:coarse){#controls{display:flex}.stat{font-size:11px;padding:7px}#mission{top:65px;font-size:11px}}
 </style>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-  }
-}
-</script>
 </head>
 
 <body>
-<div id="game"></div>
 
 <div id="hud">
+  <div class="stat">❤️ Health: <span id="health">100</span></div>
+  <div class="stat">⭐ Score: <span id="score">0</span></div>
+  <div class="stat">⚔️ Kills: <span id="kills">0</span></div>
+  <div class="stat">📜 Scrolls: <span id="scrollCount">0/3</span></div>
+  <div class="stat">🌑 Level: <span id="level">1</span></div>
+</div>
+
+<div id="mission">MISSION: Collect all 3 scrolls and reach the exit gate.</div>
+<div id="message"></div>
+
+<div id="overlay">
   <div class="panel">
-    <div><b>🥷 SHADOW ASSASSIN</b></div>
-    <div class="stat">Health: <span id="healthText">100</span></div>
-    <div id="healthBar"><div id="healthFill"></div></div>
-    <div class="stat">Score: <span id="score">0</span></div>
-  </div>
-  <div class="panel">
-    <div class="stat">Level: <b id="level">1</b></div>
-    <div class="stat">Scrolls: <b id="scrolls">0/3</b></div>
-    <div class="stat">Guards defeated: <b id="kills">0</b></div>
-    <div class="stat">Weapon: <b id="weapon">Katana</b></div>
+    <h1>🥷 SHADOW ASSASSIN</h1>
+    <p>Enter the fortress, avoid enemy detection, defeat the guards, collect the three ancient scrolls and escape.</p>
+    <p><b>CONTROLS</b><br>
+    WASD / Arrow keys: Move<br>
+    J: Sword attack | K: Throw shuriken<br>
+    SPACE: Dash | SHIFT: Hide</p>
+    <button id="startButton">ENTER THE FORTRESS</button>
   </div>
 </div>
 
-<div id="mission">MISSION: Collect 3 ancient scrolls and reach the golden gate.</div>
-<div id="message">Stay hidden. Watch the guards!</div>
-
 <div id="controls">
   <div class="pad">
-    <div></div><button class="control" data-key="w">▲</button><div></div>
-    <button class="control" data-key="a">◀</button>
-    <button class="control" data-key="s">▼</button>
-    <button class="control" data-key="d">▶</button>
+    <button class="control up" data-key="w">▲</button>
+    <button class="control left" data-key="a">◀</button>
+    <button class="control down" data-key="s">▼</button>
+    <button class="control right" data-key="d">▶</button>
   </div>
   <div class="actions">
-    <button class="control" data-action="attack">⚔️ ATTACK</button>
-    <button class="control" data-action="throw">✦ SHURIKEN</button>
+    <button class="control" data-action="attack">⚔️ SWORD</button>
+    <button class="control" data-action="throw">✦ THROW</button>
     <button class="control" data-action="dash">⚡ DASH</button>
     <button class="control" data-action="hide">🌑 HIDE</button>
   </div>
 </div>
 
-<div id="startScreen">
-  <div class="dialog">
-    <h1>SHADOW ASSASSIN</h1>
-    <p>Enter the forbidden fortress. Avoid enemy detection, collect ancient scrolls, defeat guards and escape through the golden gate.</p>
-    <p><b>WASD</b> Move · <b>J</b> Attack · <b>K</b> Shuriken · <b>SPACE</b> Dash · <b>SHIFT</b> Hide</p>
-    <button class="mainBtn" id="startBtn">ENTER THE FORTRESS</button>
-    <p class="small">Desktop and mobile controls supported.</p>
-  </div>
-</div>
-
-<div id="endScreen">
-  <div class="dialog">
-    <h1 id="endTitle">MISSION COMPLETE!</h1>
-    <p id="endText">You escaped the fortress.</p>
-    <button class="mainBtn" id="restartBtn">PLAY AGAIN</button>
-  </div>
-</div>
-
 <script type="module">
-import * as THREE from "three";
+import * as THREE from
+"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 
-const container=document.getElementById("game");
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x090f1b);
-scene.fog=new THREE.Fog(0x090f1b,22,75);
+/* =========================
+   GAME SETUP
+========================= */
 
-const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,150);
-camera.position.set(0,8,12);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x10182b);
+scene.fog = new THREE.Fog(0x10182b, 35, 95);
 
-const renderer=new THREE.WebGLRenderer({antialias:true});
+const camera = new THREE.PerspectiveCamera(
+  65, innerWidth / innerHeight, 0.1, 150
+);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias:true,
+  powerPreference:"high-performance"
+});
 renderer.setSize(innerWidth,innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-container.appendChild(renderer.domElement);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0x9ebcff,0x25202d,2));
-const sun=new THREE.DirectionalLight(0xffd9a0,2.1);
-sun.position.set(-10,18,8);
-sun.castShadow=true;
-scene.add(sun);
+scene.add(new THREE.HemisphereLight(0x9dbaff,0x252018,2));
 
-const mat=(color,roughness=.8)=>new THREE.MeshStandardMaterial({color,roughness});
-const groundMat=mat(0x263b34);
-const wallMat=mat(0x384052);
-const darkMat=mat(0x111827);
-const goldMat=new THREE.MeshStandardMaterial({color:0xffc64c,emissive:0x664000});
-const playerMat=mat(0x24243f);
-const skinMat=mat(0xd5a47c);
-const enemyMat=mat(0x9b303d);
-const greenMat=mat(0x267a4b);
+const moonLight = new THREE.DirectionalLight(0xffe2b0,2);
+moonLight.position.set(-20,35,15);
+scene.add(moonLight);
 
-function box(x,y,z,sx,sy,sz,material){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),material);
-  m.position.set(x,y,z);
-  m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
+const clock = new THREE.Clock();
+
+const material = (color, roughness=0.85) =>
+  new THREE.MeshStandardMaterial({color,roughness});
+
+const groundMat = material(0x263b35);
+const wallMat = material(0x343448);
+const darkMat = material(0x171a29);
+const goldMat = new THREE.MeshStandardMaterial({
+  color:0xffcc55,
+  emissive:0x694000,
+  metalness:0.5,
+  roughness:0.35
+});
+
+/* =========================
+   ENVIRONMENT
+========================= */
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(110,110),
+  groundMat
+);
+ground.rotation.x=-Math.PI/2;
+ground.position.y=-0.08;
+scene.add(ground);
+
+function box(x,y,z,sx,sy,sz,mat){
+  const mesh=new THREE.Mesh(
+    new THREE.BoxGeometry(sx,sy,sz),mat
+  );
+  mesh.position.set(x,y,z);
+  scene.add(mesh);
+  return mesh;
 }
 
-const floor=box(0,-.35,0,70,.6,70,groundMat);
-const grid=new THREE.GridHelper(70,35,0x56705c,0x354c42);
-grid.position.y=-.045;scene.add(grid);
+// Fortress boundary
+box(0,3,-27,55,6,1.5,wallMat);
+box(0,3,27,55,6,1.5,wallMat);
+box(-27,3,0,1.5,6,55,wallMat);
+box(27,3,0,1.5,6,55,wallMat);
 
-// Fortress walls
-box(0,2,-34,70,4,1,wallMat);
-box(0,2,34,70,4,1,wallMat);
-box(-34,2,0,1,4,70,wallMat);
-box(34,2,0,1,4,70,wallMat);
+// Towers
+for(const x of [-24,24]){
+  for(const z of [-24,24]){
+    box(x,4,z,5,8,5,darkMat);
+    box(x,8.2,z,5.5,.5,5.5,goldMat);
+  }
+}
 
-// Golden escape gate
-const gate=box(0,2,-33.25,5,4,.4,goldMat);
-box(-3,2,-33,0.5,4,1,goldMat);
-box(3,2,-33,0.5,4,1,goldMat);
-
-// Buildings and obstacles
-for(let i=0;i<24;i++){
-  const x=(Math.random()-.5)*52;
-  const z=(Math.random()-.5)*52;
-  if(Math.abs(x)<7&&Math.abs(z)<7)continue;
-  const w=2+Math.random()*3,h=2+Math.random()*5;
-  box(x,h/2-.1,z,w,h,w,Math.random()>.5?wallMat:darkMat);
+// Buildings
+for(let i=0;i<12;i++){
+  const x=(Math.random()-.5)*42;
+  const z=(Math.random()-.5)*42;
+  if(Math.abs(x)<7 && Math.abs(z)<7)continue;
+  box(x,1.8,z,4,3.6,4,wallMat);
+  box(x,3.8,z,4.5,.4,4.5,darkMat);
 }
 
 // Trees
-function tree(x,z){
-  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.25,2,7),mat(0x63452c));
-  trunk.position.set(x,1,z);scene.add(trunk);
-  const leaves=new THREE.Mesh(new THREE.ConeGeometry(1.25,3,8),greenMat);
-  leaves.position.set(x,3,z);scene.add(leaves);
+function createTree(x,z){
+  const trunk=new THREE.Mesh(
+    new THREE.CylinderGeometry(.18,.3,2,7),
+    material(0x65442d)
+  );
+  trunk.position.set(x,1,z);
+  scene.add(trunk);
+
+  const leaves=new THREE.Mesh(
+    new THREE.SphereGeometry(1.2,8,7),
+    material(0x1d6848)
+  );
+  leaves.position.set(x,2.5,z);
+  scene.add(leaves);
 }
-for(let i=0;i<18;i++){
-  const x=(Math.random()-.5)*58,z=(Math.random()-.5)*58;
-  if(Math.abs(x)<8&&Math.abs(z)<8)continue;
-  tree(x,z);
+for(let i=0;i<24;i++){
+  const x=(Math.random()-.5)*48;
+  const z=(Math.random()-.5)*48;
+  if(Math.abs(x)<9 && Math.abs(z)<9)continue;
+  createTree(x,z);
 }
 
-// Player
+// Exit gate
+const gate= new THREE.Group();
+const gateFrame=new THREE.Mesh(
+  new THREE.BoxGeometry(5,5,.7),goldMat
+);
+gateFrame.position.y=2.5;
+gate.add(gateFrame);
+
+const gateDoor=new THREE.Mesh(
+  new THREE.BoxGeometry(3.7,4.2,.8),
+  material(0x171329)
+);
+gateDoor.position.set(0,2.2,.05);
+gate.add(gateDoor);
+gate.position.set(0,0,-25);
+scene.add(gate);
+
+/* =========================
+   PLAYER
+========================= */
+
 const player=new THREE.Group();
 scene.add(player);
-const body=new THREE.Mesh(new THREE.CylinderGeometry(.38,.48,1.1,10),playerMat);
-body.position.y=1;body.castShadow=true;player.add(body);
-const head=new THREE.Mesh(new THREE.SphereGeometry(.34,12,10),skinMat);
-head.position.y=1.75;player.add(head);
-const mask=new THREE.Mesh(new THREE.BoxGeometry(.55,.18,.38),mat(0x090b14));
-mask.position.set(0,1.68,.22);player.add(mask);
-const scarf=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.85),mat(0x7a1d39));
-scarf.position.set(0,1.25,-.48);player.add(scarf);
-player.position.set(0,0,20);
+player.position.set(0,0,18);
 
-// Player state
-let health=100,score=0,kills=0,scrollCount=0,level=1;
-let running=false,hidden=false,attackCooldown=0,throwCooldown=0,dashCooldown=0;
+const playerBody=new THREE.Mesh(
+  new THREE.CylinderGeometry(.4,.48,1.2,10),
+  material(0x171a2b)
+);
+playerBody.position.y=1;
+player.add(playerBody);
+
+const playerHead=new THREE.Mesh(
+  new THREE.SphereGeometry(.32,12,10),
+  material(0xc58c6a)
+);
+playerHead.position.y=1.8;
+player.add(playerHead);
+
+const hood=new THREE.Mesh(
+  new THREE.SphereGeometry(.37,10,8),
+  material(0x090d18)
+);
+hood.scale.y=.65;
+hood.position.y=1.95;
+player.add(hood);
+
+const playerSword=new THREE.Mesh(
+  new THREE.BoxGeometry(.08,.08,1.2),goldMat
+);
+playerSword.position.set(.5,.9,.35);
+player.add(playerSword);
+
+let health=100;
+let score=0;
+let kills=0;
+let scrollCount=0;
+let level=1;
+let running=false;
 let gameOver=false;
-let keys={};
-let enemies=[],scrolls=[],projectiles=[],effects=[];
-let lastMessage=0;
+let hidden=false;
 
-function say(text){
-  document.getElementById("message").textContent=text;
-  lastMessage=3;
-}
+let attackCooldown=0;
+let throwCooldown=0;
+let dashCooldown=0;
+let dashTime=0;
+let messageTimer=0;
 
-// ADVANCED ENEMY DETECTION SYSTEM
-function createDetectionRing(enemy) {
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.65, 0.82, 32),
+const keys={w:false,a:false,s:false,d:false};
+const enemies=[];
+const scrolls=[];
+const projectiles=[];
+const effects=[];
+
+/* =========================
+   ENEMY DETECTION SYSTEM
+========================= */
+
+function createDetectionRing(enemy){
+  const ring=new THREE.Mesh(
+    new THREE.RingGeometry(.65,.85,32),
     new THREE.MeshBasicMaterial({
-      color: 0xff3333,
-      transparent: true,
-      opacity: 0.75,
-      side: THREE.DoubleSide
+      color:0x35d879,
+      transparent:true,
+      opacity:.8,
+      side:THREE.DoubleSide
     })
   );
-
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.08;
+  ring.rotation.x=-Math.PI/2;
+  ring.position.y=.08;
   enemy.group.add(ring);
-  enemy.detectionRing = ring;
+  enemy.detectionRing=ring;
 }
 
-function updateDetectionIndicator(enemy) {
-  if (!enemy.detectionRing) return;
+function updateDetectionIndicator(enemy){
+  if(!enemy.detectionRing)return;
 
-  const colors = {
-    patrol: 0x35d879,
-    suspicious: 0xffc247,
-    chase: 0xff3333,
-    search: 0x9b70ff
-  };
-
-  enemy.detectionRing.material.color.setHex(
-    colors[enemy.state] || 0x35d879
-}
-
-
-// ADVANCED ENEMY DETECTION SYSTEM
-function createDetectionRing(enemy) {
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.65, 0.82, 32),
-    new THREE.MeshBasicMaterial({
-      color: 0x35d879,
-      transparent: true,
-      opacity: 0.75,
-      side: THREE.DoubleSide
-    })
-  );
-
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.08;
-  enemy.group.add(ring);
-  enemy.detectionRing = ring;
-}
-
-function updateDetectionIndicator(enemy) {
-  if (!enemy.detectionRing) return;
-
-  const colors = {
-    patrol: 0x35d879,
-    suspicious: 0xffc247,
-    chase: 0xff3333,
-    search: 0x9b70ff
+  const colors={
+    patrol:0x35d879,
+    suspicious:0xffc247,
+    chase:0xff3333,
+    search:0x9b70ff
   };
 
   enemy.detectionRing.material.color.setHex(
     colors[enemy.state] || 0x35d879
   );
 }
-// Enemies
+
+/* =========================
+   ENEMY CREATION
+========================= */
+
 function createEnemy(x,z,index){
   const group=new THREE.Group();
+
   const color=index%4===0?0x8a315a:0x9b303d;
-  const torso=new THREE.Mesh(new THREE.CylinderGeometry(.38,.46,1.15,9),mat(color));
-  torso.position.y=1;group.add(torso);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.32,10,9),mat(0xc48a69));
-  head.position.y=1.75;group.add(head);
-  const helmet=new THREE.Mesh(new THREE.SphereGeometry(.37,10,8),mat(0x25283c));
-  helmet.scale.y=.55;helmet.position.y=1.98;group.add(helmet);
-  const blade=new THREE.Mesh(new THREE.BoxGeometry(.09,.09,1.1),goldMat);
-  blade.position.set(.5,.9,.25);group.add(blade);
+
+  const torso=new THREE.Mesh(
+    new THREE.CylinderGeometry(.38,.46,1.15,9),
+    material(color)
+  );
+  torso.position.y=1;
+  group.add(torso);
+
+  const head=new THREE.Mesh(
+    new THREE.SphereGeometry(.32,10,9),
+    material(0xc48a69)
+  );
+  head.position.y=1.75;
+  group.add(head);
+
+  const helmet=new THREE.Mesh(
+    new THREE.SphereGeometry(.37,10,8),
+    material(0x25283c)
+  );
+  helmet.scale.y=.55;
+  helmet.position.y=1.98;
+  group.add(helmet);
+
+  const blade=new THREE.Mesh(
+    new THREE.BoxGeometry(.09,.09,1.1),goldMat
+  );
+  blade.position.set(.5,.9,.25);
+  group.add(blade);
+
   group.position.set(x,0,z);
   scene.add(group);
- 
-const enemy = {
-  group,
-  homeX: x,
-  homeZ: z,
-  angle: Math.random() * 6.28,
-  state: "patrol",
-  hp: index % 4 === 0 ? 3 : 2,
-  speed: index % 4 === 0 ? 2.3 : 1.65,
-  attack: 0,
-  alert: 0
-};
 
-createDetectionRing(enemy);
-enemies.push(enemy);
-};
+  const enemy={
+    group,
+    homeX:x,
+    homeZ:z,
+    angle:Math.random()*Math.PI*2,
+    state:"patrol",
+    hp:index%4===0?3:2,
+    speed:index%4===0?2.3:1.65,
+    attack:0,
+    alert:0
+  };
+
+  createDetectionRing(enemy);
+  enemies.push(enemy);
 }
 
 for(let i=0;i<9;i++){
-  createEnemy((Math.random()-.5)*48,(Math.random()-.5)*48,i);
+  const angle=(i/9)*Math.PI*2;
+  createEnemy(
+    Math.cos(angle)*17,
+    Math.sin(angle)*17,
+    i
+  );
 }
 
-// Scroll collectibles
+/* =========================
+   SCROLL COLLECTIBLES
+========================= */
+
 function createScroll(x,z){
   const group=new THREE.Group();
+
   const ring=new THREE.Mesh(
     new THREE.TorusGeometry(.48,.09,8,20),
-    new THREE.MeshStandardMaterial({color:0xffd45b,emissive:0x754800})
+    goldMat
   );
-  ring.rotation.x=Math.PI/2;group.add(ring);
-  const core=new THREE.Mesh(new THREE.BoxGeometry(.25,.5,.12),goldMat);
+  ring.rotation.x=Math.PI/2;
+  group.add(ring);
+
+  const core=new THREE.Mesh(
+    new THREE.BoxGeometry(.25,.5,.12),goldMat
+  );
   group.add(core);
-  group.position.set(x,.8,z);scene.add(group);
+
+  group.position.set(x,.8,z);
+  scene.add(group);
   scrolls.push({group,found:false});
 }
-createScroll(-23,20);
-createScroll(23,-18);
-createScroll(-20,-22);
 
-// Effects
+createScroll(-21,18);
+createScroll(21,-15);
+createScroll(-19,-20);
+
+/* =========================
+   EFFECTS
+========================= */
+
 function burst(position,color=0xffd45b){
   for(let i=0;i<9;i++){
-    const p=new THREE.Mesh(new THREE.SphereGeometry(.07,6,6),mat(color));
-    p.position.copy(position);
-    scene.add(p);
-    effects.push({mesh:p,life:.5,velocity:new THREE.Vector3(
-      (Math.random()-.5)*5,Math.random()*4,(Math.random()-.5)*5
-    )});
+    const mesh=new THREE.Mesh(
+      new THREE.SphereGeometry(.07,6,6),
+      new THREE.MeshBasicMaterial({color})
+    );
+    mesh.position.copy(position);
+    scene.add(mesh);
+
+    effects.push({
+      mesh,
+      life:.55,
+      velocity:new THREE.Vector3(
+        (Math.random()-.5)*5,
+        Math.random()*4,
+        (Math.random()-.5)*5
+      )
+    });
   }
+}
+
+/* =========================
+   GAME MESSAGES AND HUD
+========================= */
+
+function say(text){
+  const el=document.getElementById("message");
+  el.textContent=text;
+  el.style.opacity=1;
+  messageTimer=1.8;
 }
 
 function updateHUD(){
-  document.getElementById("healthText").textContent=Math.max(0,Math.ceil(health));
-  document.getElementById("healthFill").style.width=Math.max(0,health)+"%";
+  document.getElementById("health").textContent=Math.max(0,Math.floor(health));
   document.getElementById("score").textContent=score;
   document.getElementById("kills").textContent=kills;
-  document.getElementById("scrolls").textContent=scrollCount+"/3";
+  document.getElementById("scrollCount").textContent=scrollCount+"/3";
   document.getElementById("level").textContent=level;
 }
 
-function distance(a,b){return a.distanceTo(b)}
+/* =========================
+   PLAYER MOVEMENT
+========================= */
 
-function attack(){
+function movePlayer(dt){
+  let x=0,z=0;
+
+  if(keys.w)x-=0;
+  if(keys.s)z+=1;
+  if(keys.w)z-=1;
+  if(keys.a)x-=1;
+  if(keys.d)x+=1;
+
+  const direction=new THREE.Vector3(x,0,z);
+
+  if(direction.lengthSq()>0){
+    direction.normalize();
+    player.position.addScaledVector(
+      direction,(hidden?2.1:5.2)*dt
+    );
+    player.rotation.y=Math.atan2(direction.x,direction.z);
+  }
+
+  if(dashTime>0){
+    dashTime-=dt;
+    const forward=new THREE.Vector3(
+      Math.sin(player.rotation.y),0,
+      Math.cos(player.rotation.y)
+    );
+    player.position.addScaledVector(forward,15*dt);
+  }
+
+  player.position.x=THREE.MathUtils.clamp(player.position.x,-24,24);
+  player.position.z=THREE.MathUtils.clamp(player.position.z,-24,24);
+}
+
+/* =========================
+   COMBAT
+========================= */
+
+function swordAttack(){
   if(!running||gameOver||attackCooldown>0)return;
   attackCooldown=.55;
-  say("KATANA STRIKE!");
+
+  burst(
+    player.position.clone().add(new THREE.Vector3(0,1,0)),
+    0xffd45b
+  );
+
   let hit=false;
+
   for(const e of enemies){
     if(e.hp<=0)continue;
-    if(distance(player.position,e.group.position)<3.2){
+
+    const d=player.position.distanceTo(e.group.position);
+    if(d<2.8){
       e.hp--;
-      burst(e.group.position.clone().add(new THREE.Vector3(0,1,0)),0xff536e);
-      if(e.hp<=0){
-        scene.remove(e.group);kills++;score+=100;
-        say("GUARD ELIMINATED +100");
-      }else say("HIT! Keep attacking!");
       hit=true;
+      burst(
+        e.group.position.clone().add(new THREE.Vector3(0,1,0)),
+        0xff3333
+      );
+
+      if(e.hp<=0){
+        e.group.visible=false;
+        score+=100;
+        kills++;
+        say("ENEMY ELIMINATED!");
+      }else{
+        say("GUARD HIT!");
+      }
     }
   }
-  if(!hit)say("Your blade cuts through the air!");
+
+  if(!hit)say("SWORD STRIKE!");
   updateHUD();
 }
 
-function throwStar(){
+function throwShuriken(){
   if(!running||gameOver||throwCooldown>0)return;
-  throwCooldown=.8;
+  throwCooldown=.7;
+
   const direction=new THREE.Vector3(
-    Math.sin(player.rotation.y),0,Math.cos(player.rotation.y)
+    Math.sin(player.rotation.y),0,
+    Math.cos(player.rotation.y)
   );
-  const star=new THREE.Mesh(new THREE.OctahedronGeometry(.22),goldMat);
-  star.position.copy(player.position).add(new THREE.Vector3(0,1.4,0));
-  scene.add(star);
-  projectiles.push({mesh:star,direction,life:2});
+
+  const mesh=new THREE.Mesh(
+    new THREE.TorusGeometry(.22,.045,5,8),
+    goldMat
+  );
+  mesh.position.copy(player.position);
+  mesh.position.y=1.2;
+  scene.add(mesh);
+
+  projectiles.push({
+    mesh,
+    direction,
+    life:2.5
+  });
 }
 
 function dash(){
   if(!running||gameOver||dashCooldown>0)return;
-  dashCooldown=2.5;
-  const forward=new THREE.Vector3(
-    Math.sin(player.rotation.y),0,Math.cos(player.rotation.y)
-  );
-  player.position.addScaledVector(forward,5);
-  player.position.x=THREE.MathUtils.clamp(player.position.x,-31,31);
-  player.position.z=THREE.MathUtils.clamp(player.position.z,-31,31);
-  burst(player.position.clone().add(new THREE.Vector3(0,1,0)),0x9e78ff);
+  dashCooldown=2;
+  dashTime=.22;
   say("SHADOW DASH!");
 }
 
 function toggleHide(){
+  if(!running||gameOver)return;
   hidden=!hidden;
-  player.scale.y=hidden?.72:1;
-  say(hidden?"YOU ARE HIDING":"YOU LEFT YOUR HIDING POSITION");
+  playerBody.material.color.setHex(hidden?0x101d38:0x171a2b);
+  say(hidden?"HIDING MODE ACTIVE":"YOU ARE EXPOSED!");
 }
 
-// Keyboard controls
-addEventListener("keydown",e=>{
-  const k=e.key.toLowerCase();
-  keys[k]=true;
-  if(k==="j")attack();
-  if(k==="k")throwStar();
-  if(k===" "){e.preventDefault();dash();}
-  if(k==="shift")toggleHide();
-});
-addEventListener("keyup",e=>{
-  keys[e.key.toLowerCase()]=false;
-});
+/* =========================
+   ENEMY AI
+========================= */
 
-document.querySelectorAll("[data-key]").forEach(button=>{
-  const key=button.dataset.key;
-  button.addEventListener("pointerdown",e=>{e.preventDefault();keys[key]=true;});
-  ["pointerup","pointerleave","pointercancel"].forEach(ev=>
-    button.addEventListener(ev,()=>keys[key]=false)
-  );
-});
-document.querySelectorAll("[data-action]").forEach(button=>{
-  button.addEventListener("pointerdown",e=>{
-    e.preventDefault();
-    const a=button.dataset.action;
-    if(a==="attack")attack();
-    if(a==="throw")throwStar();
-    if(a==="dash")dash();
-    if(a==="hide")toggleHide();
-  });
-});
-
-// Player movement and world limits
-function movePlayer(dt){
-  let x=0,z=0;
-  if(keys.w||keys.arrowup)z-=1;
-  if(keys.s||keys.arrowdown)z+=1;
-  if(keys.a||keys.arrowleft)x-=1;
-  if(keys.d||keys.arrowright)x+=1;
-  const moving=x!==0||z!==0;
-  if(moving){
-    const len=Math.hypot(x,z);x/=len;z/=len;
-    const speed=hidden?2.0:5.5;
-    player.position.x+=x*speed*dt;
-    player.position.z+=z*speed*dt;
-    player.rotation.y=Math.atan2(x,z);
-    body.rotation.z=Math.sin(performance.now()*.012)*.07;
-  }
-  player.position.x=THREE.MathUtils.clamp(player.position.x,-31,31);
-  player.position.z=THREE.MathUtils.clamp(player.position.z,-31,31);
+function distance(a,b){
+  const dx=a.x-b.x;
+  const dz=a.z-b.z;
+  return Math.sqrt(dx*dx+dz*dz);
 }
 
+function updateEnemies(dt){
+  for(const e of enemies){
+    if(e.hp<=0)continue;
 
-// ENEMY AI — CORRECTED VERSION
-function updateEnemies(dt) {
-  for (const e of enemies) {
-    if (e.hp <= 0) continue;
+    const d=distance(player.position,e.group.position);
+    const detection=hidden?4.2:11;
 
-    const d = distance(player.position, e.group.position);
-    const detection = hidden ? 4.2 : 11;
+    if(d<detection){
+      e.alert=Math.min(1,e.alert+dt*.65);
 
-    // Detection and alert levels
-    if (d < detection) {
-      e.alert = Math.min(1, e.alert + dt * 0.65);
-
-      if (e.alert >= 1) {
-        e.state = "chase";
-      } else {
-        e.state = "suspicious";
+      if(e.alert>=1){
+        e.state="chase";
+      }else{
+        e.state="suspicious";
       }
+    }else if(e.alert>0){
+      e.alert=Math.max(0,e.alert-dt*.22);
 
-    } else if (e.alert > 0) {
-      e.alert = Math.max(0, e.alert - dt * 0.22);
-
-      if (e.alert === 0) {
-        e.state = "patrol";
-      } else if (e.state !== "chase") {
-        e.state = "search";
+      if(e.alert===0){
+        e.state="patrol";
+      }else if(e.state!=="chase"){
+        e.state="search";
       }
+    }else{
+      e.state="patrol";
     }
 
     updateDetectionIndicator(e);
 
-    // Guard movement
-    if (e.state === "chase" && d > 1.6) {
-      const dir = new THREE.Vector3()
-        .subVectors(player.position, e.group.position)
+    if(e.state==="chase"&&d>1.6){
+      const dir=new THREE.Vector3()
+        .subVectors(player.position,e.group.position)
+        .setY(0)
         .normalize();
 
-      e.group.position.addScaledVector(dir, e.speed * dt);
-      e.group.rotation.y = Math.atan2(dir.x, dir.z);
+      e.group.position.addScaledVector(dir,e.speed*dt);
+      e.group.rotation.y=Math.atan2(dir.x,dir.z);
 
-    } else if (e.state === "patrol" || e.state === "search") {
-      e.angle += dt * 0.55;
-
-      e.group.position.x = e.homeX + Math.sin(e.angle) * 2;
-      e.group.position.z = e.homeZ + Math.cos(e.angle) * 2;
-      e.group.rotation.y = e.angle;
+    }else if(e.state==="patrol"||e.state==="search"){
+      e.angle+=dt*.55;
+      e.group.position.x=e.homeX+Math.sin(e.angle)*2;
+      e.group.position.z=e.homeZ+Math.cos(e.angle)*2;
+      e.group.rotation.y=e.angle;
     }
 
-    // Guard attacks
-    if (d < 1.7) {
-      e.attack -= dt;
+    if(d<1.7){
+      e.attack-=dt;
 
-      if (e.attack <= 0) {
-        e.attack = 1.15;
-        health -= hidden ? 3 : 8;
+      if(e.attack<=0){
+        e.attack=1.15;
+        health-=hidden?3:8;
 
         burst(
-          player.position.clone().add(
-            new THREE.Vector3(0, 1, 0)
-          ),
+          player.position.clone().add(new THREE.Vector3(0,1,0)),
           0xff3333
         );
 
         say("YOU HAVE BEEN HIT!");
         updateHUD();
 
-        if (health <= 0) {
-          finish(false);
-        }
+        if(health<=0)finish(false);
       }
     }
   }
 }
 
+/* =========================
+   PROJECTILES
+========================= */
 
-// Shuriken flight
 function updateProjectiles(dt){
   for(let i=projectiles.length-1;i>=0;i--){
     const p=projectiles[i];
+
     p.mesh.position.addScaledVector(p.direction,18*dt);
-    p.mesh.rotation.z+=dt*15;
+    p.mesh.rotation.z+=dt*12;
     p.life-=dt;
-    let removed=false;
+
+    let remove=p.life<=0;
+
     for(const e of enemies){
       if(e.hp<=0)continue;
-      if(distance(p.mesh.position,e.group.position.clone().add(new THREE.Vector3(0,1,0)))<1){
+
+      if(p.mesh.position.distanceTo(e.group.position)<1){
         e.hp--;
-        burst(e.group.position.clone().add(new THREE.Vector3(0,1,0)),0xffd45b);
+        burst(e.group.position,0xffcc55);
+        remove=true;
+
         if(e.hp<=0){
-          scene.remove(e.group);kills++;score+=100;
-          say("SHURIKEN HIT! GUARD DOWN");
-        }else say("SHURIKEN HIT!");
-        scene.remove(p.mesh);projectiles.splice(i,1);
-        updateHUD();removed=true;break;
+          e.group.visible=false;
+          kills++;
+          score+=100;
+          updateHUD();
+          say("SHURIKEN ELIMINATION!");
+        }
+        break;
       }
     }
-    if(!removed&&p.life<=0){
-      scene.remove(p.mesh);projectiles.splice(i,1);
+
+    if(remove){
+      scene.remove(p.mesh);
+      projectiles.splice(i,1);
     }
   }
 }
 
-// Scroll collection
+/* =========================
+   COLLECTIBLES AND EFFECTS
+========================= */
+
 function updateScrolls(dt){
   for(const s of scrolls){
     if(s.found)continue;
-    s.group.rotation.y+=dt*1.7;
-    s.group.position.y=.8+Math.sin(performance.now()*.003)*.15;
-    if(distance(player.position,s.group.position)<1.8){
-      s.found=true;scene.remove(s.group);
-      scrollCount++;score+=150;
-      say("ANCIENT SCROLL COLLECTED +150");
+
+    s.group.rotation.y+=dt*1.8;
+    s.group.position.y=.8+Math.sin(clock.elapsedTime*2)*.15;
+
+    if(distance(player.position,s.group.position)<1.6){
+      s.found=true;
+      scene.remove(s.group);
+      scrollCount++;
+      score+=250;
+      say("ANCIENT SCROLL COLLECTED!");
       updateHUD();
     }
   }
 }
 
-// Floating hit effects
 function updateEffects(dt){
   for(let i=effects.length-1;i>=0;i--){
-    const e=effects[i];e.life-=dt;
+    const e=effects[i];
+    e.life-=dt;
     e.mesh.position.addScaledVector(e.velocity,dt);
-    e.mesh.scale.multiplyScalar(.97);
+    e.velocity.y-=5*dt;
+
     if(e.life<=0){
-      scene.remove(e.mesh);effects.splice(i,1);
+      scene.remove(e.mesh);
+      e.mesh.geometry.dispose();
+      e.mesh.material.dispose();
+      effects.splice(i,1);
     }
   }
 }
 
-// Camera follows the ninja
+/* =========================
+   CAMERA
+========================= */
+
 function updateCamera(dt){
-  const target=new THREE.Vector3(
-    player.position.x,
-    6.5,
-    player.position.z+9
+  const offset=new THREE.Vector3(
+    0,7,11
+  ).applyAxisAngle(
+    new THREE.Vector3(0,1,0),player.rotation.y
   );
-  camera.position.lerp(target,Math.min(1,dt*4));
-  camera.lookAt(player.position.x,1,player.position.z-2);
+
+  const target=player.position.clone().add(offset);
+  camera.position.lerp(target,Math.min(1,dt*5));
+
+  const look=player.position.clone();
+  look.y+=1.1;
+  camera.lookAt(look);
 }
 
-// Mission completion
+/* =========================
+   MISSION AND ENDING
+========================= */
+
 function checkMission(){
-  if(scrollCount>=3&&player.position.z<-29){
-    finish(true);
+  if(scrollCount===3){
+    document.getElementById("mission").textContent=
+      "MISSION: All scrolls collected! Reach the golden exit gate.";
   }
-  if(kills>=9&&scrollCount<3){
-    say("Collect the remaining scrolls!");
+
+  if(scrollCount===3&&distance(player.position,gate.position)<4){
+    finish(true);
   }
 }
 
 function finish(won){
   if(gameOver)return;
-  gameOver=true;running=false;
-  document.getElementById("endTitle").textContent=won?"MISSION COMPLETE!":"MISSION FAILED";
-  document.getElementById("endText").textContent=won?
-    "You conquered the fortress and escaped! Final score: "+score:
-    "Your ninja journey ends here. Final score: "+score;
-  document.getElementById("endScreen").style.display="flex";
+
+  gameOver=true;
+  running=false;
+
+  const title=won?"MISSION COMPLETED!":"MISSION FAILED";
+
+  document.querySelector("#overlay h1").textContent=
+    won?"🏆 SHADOW MASTER":"💀 GAME OVER";
+
+  document.querySelector("#overlay p").innerHTML=
+    title+"<br><br>Score: "+score+
+    "<br>Enemies defeated: "+kills+
+    "<br>Scrolls collected: "+scrollCount+"/3";
+
+  document.getElementById("startButton").textContent="PLAY AGAIN";
+  document.getElementById("overlay").style.display="flex";
 }
 
-// Start and restart
-function startGame(){
-  document.getElementById("startScreen").style.display="none";
-  document.getElementById("endScreen").style.display="none";
-  running=true;gameOver=false;
-}
-document.getElementById("startBtn").addEventListener("click",startGame);
-document.getElementById("restartBtn").addEventListener("click",()=>location.reload());
+/* =========================
+   RESET GAME
+========================= */
 
-// Main game loop
-const clock=new THREE.Clock();
+function resetGame(){
+  health=100;
+  score=0;
+  kills=0;
+  scrollCount=0;
+  level=1;
+  hidden=false;
+  gameOver=false;
+  running=true;
+
+  player.position.set(0,0,18);
+  player.rotation.y=0;
+  playerBody.material.color.setHex(0x171a2b);
+
+  for(const e of enemies){
+    e.hp=e.group.userData.originalHP||2;
+    e.group.visible=true;
+    e.alert=0;
+    e.state="patrol";
+    e.attack=0;
+    e.group.position.set(e.homeX,0,e.homeZ);
+    updateDetectionIndicator(e);
+  }
+
+  for(const s of scrolls){
+    s.found=false;
+    s.group.visible=true;
+    s.group.position.y=.8;
+  }
+
+  for(const p of projectiles)scene.remove(p.mesh);
+  projectiles.length=0;
+
+  for(const e of effects){
+    scene.remove(e.mesh);
+  }
+  effects.length=0;
+
+  attackCooldown=0;
+  throwCooldown=0;
+  dashCooldown=0;
+  dashTime=0;
+
+  document.getElementById("mission").textContent=
+    "MISSION: Collect all 3 scrolls and reach the exit gate.";
+
+  document.getElementById("overlay").style.display="none";
+  updateHUD();
+}
+
+/* =========================
+   INPUT CONTROLS
+========================= */
+
+window.addEventListener("keydown",e=>{
+  const k=e.key.toLowerCase();
+
+  if(k in keys)keys[k]=true;
+
+  if(e.repeat)return;
+
+  if(k==="j")swordAttack();
+  if(k==="k")throwShuriken();
+  if(k===" ")dash();
+  if(k==="shift")toggleHide();
+});
+
+window.addEventListener("keyup",e=>{
+  const k=e.key.toLowerCase();
+  if(k in keys)keys[k]=false;
+});
+
+document.querySelectorAll("[data-key]").forEach(button=>{
+  const key=button.dataset.key;
+
+  button.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    keys[key]=true;
+  });
+
+  ["pointerup","pointerleave","pointercancel"].forEach(event=>{
+    button.addEventListener(event,()=>keys[key]=false);
+  });
+});
+
+document.querySelectorAll("[data-action]").forEach(button=>{
+  button.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    const action=button.dataset.action;
+
+    if(action==="attack")swordAttack();
+    if(action==="throw")throwShuriken();
+    if(action==="dash")dash();
+    if(action==="hide")toggleHide();
+  });
+});
+
+document.getElementById("startButton").addEventListener(
+  "click",resetGame
+);
+
+/* =========================
+   MAIN GAME LOOP
+========================= */
+
 function animate(){
   requestAnimationFrame(animate);
+
   const dt=Math.min(clock.getDelta(),.04);
 
   if(running&&!gameOver){
@@ -673,11 +876,19 @@ function animate(){
     updateProjectiles(dt);
     updateScrolls(dt);
     updateEffects(dt);
-    updateCamera(dt);
+
     attackCooldown=Math.max(0,attackCooldown-dt);
     throwCooldown=Math.max(0,throwCooldown-dt);
     dashCooldown=Math.max(0,dashCooldown-dt);
-    lastMessage-=dt;
+
+    if(messageTimer>0){
+      messageTimer-=dt;
+      if(messageTimer<=0){
+        document.getElementById("message").style.opacity=0;
+      }
+    }
+
+    updateCamera(dt);
     checkMission();
   }else{
     updateCamera(dt);
@@ -685,15 +896,17 @@ function animate(){
 
   renderer.render(scene,camera);
 }
-animate();
 
-addEventListener("resize",()=>{
+window.addEventListener("resize",()=>{
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
 });
 
 updateHUD();
+animate();
+
 </script>
 </body>
 </html>
+
