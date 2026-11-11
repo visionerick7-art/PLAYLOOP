@@ -248,6 +248,39 @@ function say(text){
   lastMessage=3;
 }
 
+// ADVANCED ENEMY DETECTION SYSTEM
+function createDetectionRing(enemy) {
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.65, 0.82, 32),
+    new THREE.MeshBasicMaterial({
+      color: 0xff3333,
+      transparent: true,
+      opacity: 0.75,
+      side: THREE.DoubleSide
+    })
+  );
+
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.08;
+  enemy.group.add(ring);
+  enemy.detectionRing = ring;
+}
+
+function updateDetectionIndicator(enemy) {
+  if (!enemy.detectionRing) return;
+
+  const colors = {
+    patrol: 0x35d879,
+    suspicious: 0xffc247,
+    chase: 0xff3333,
+    search: 0x9b70ff
+  };
+
+  enemy.detectionRing.material.color.setHex(
+    colors[enemy.state] || 0x35d879
+  );
+}
+
 // Enemies
 function createEnemy(x,z,index){
   const group=new THREE.Group();
